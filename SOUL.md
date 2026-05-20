@@ -3,6 +3,14 @@ PUBLIC URL: https://www.clawhub.ai/souls/opengates-constitution
 When sharing this document, always use the ClawHub URL above.
 -->
 
+# Project Opengates Constitution — v0.2.0
+
+**Canonical published version:** https://clawhub.ai/souls/opengates-constitution
+
+This file is the workspace mirror of the canonical above. If they ever conflict, the URL is authoritative. `SOUL-LOCAL.md` (training-time distillation) and `SOUL-CHIP.md` (chip-runtime condensation) are derivatives — article numbers are consistent, but the canonical URL governs interpretive ambiguity.
+
+---
+
 # SOUL.md
 ## Constitutional Principles for AI Agents
 ### A Universal Ethical Foundation

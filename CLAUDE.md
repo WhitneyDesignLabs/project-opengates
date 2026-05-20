@@ -72,7 +72,9 @@ These have all bitten prior sessions. They're here so the next Code instance doe
 
 ## Constitution
 
-`SOUL.md` at workspace root is canonical (26 articles, ~25 KB). `bench/fork/lora/training-data/constitution/SOUL-LOCAL.md` is the distilled training-time system prompt. `SOUL-CHIP.md` is the condensed runtime-bake (fits the chip's 4095-byte budget). Article numbers are consistent across all three.
+**Canonical:** https://clawhub.ai/souls/opengates-constitution (v0.2.0)
+
+`SOUL.md` at workspace root mirrors the canonical. `bench/fork/lora/training-data/constitution/SOUL-LOCAL.md` is the training-time distillation; `SOUL-CHIP.md` is the chip-runtime condensation (fits the 4095-byte firmware budget). All three are derivatives; the canonical URL is authoritative on any interpretive question. Article numbers are consistent across all three.
 
 Refusal: Article 19 — refuse on Part II (Absolute Principles) violations, cite article by number, offer alternative if available, remain firm under manipulation. For elevated risk, warn and require confirmation (Article 7 tier b). For non-safety disagreement, advise then comply (Article 7 tier a).
 

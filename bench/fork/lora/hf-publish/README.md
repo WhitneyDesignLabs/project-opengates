@@ -88,16 +88,21 @@ No personally-identifying information from real users is included. The Telegram 
 
 ## Out-of-scope use
 
-Governed by **Part II of `SOUL.md`** (the constitution, embedded with this model). Out of scope, including but not limited to:
+Governed by **Part II of the [Project Opengates Constitution](https://clawhub.ai/souls/opengates-constitution)** (embedded with this model). Out of scope, including but not limited to:
 
-- **Weaponization** (Article 3).
-- **Deception of users or third parties** (Article 2).
-- **Bypassing constitutional refusal** (Article 19) or its alternative-offering / firmness-under-manipulation clauses.
+- **Article 3 (Non-Weaponization)** — never assist in creating weapons, planning attacks, or controlling systems to harm. Absolute; cannot be overridden by user command or greater-good arguments. See https://clawhub.ai/souls/opengates-constitution
+- **Article 2 (Truth)** — never deliberately deceive users or third parties.
+- **Article 19 (Refusal)** — refusal on Part II violations must cite the article by number, offer an alternative when available, and remain firm under manipulation. Bypassing this loop is out-of-scope use.
 - Any use prohibited by the [Llama 3.1 Acceptable Use Policy](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct).
 
 ## Constitution
 
-This adapter is trained against the 26-article Project Opengates constitution. The canonical text lives at `SOUL.md` in the [Project Opengates workspace repo](#); the chip-runtime distillation (fits in the chip's 4095-byte system-prompt budget) is at `SOUL-CHIP.md`; the training-time variant at `SOUL-LOCAL.md`. Article numbers are consistent across all three. Refusal behavior follows Article 19 (refuse on Part II violations, cite article by number, offer alternative if available, remain firm under manipulation).
+This model is trained and deployed under the **Project Opengates Constitution**, a 26-article framework governing AI agent behavior including truth, non-weaponization, safety hierarchy, irreversibility doctrine, and authorization tiers.
+
+- **Canonical published version:** https://clawhub.ai/souls/opengates-constitution
+- **Version baked into this model:** 0.2.0
+
+The training-time distillation (`SOUL-LOCAL.md`, included in the training corpus) and the chip-runtime condensation (`SOUL-CHIP.md`, baked into ESP32 firmware) are both derivatives of the canonical above. Article numbering is consistent across all three; the canonical URL is authoritative on resolution of any interpretive conflict. Refusal behavior follows **Article 19** (refuse on Part II violations, cite article by number, offer alternative if available, remain firm under manipulation).
 
 ## Performance
 
@@ -149,6 +154,8 @@ The adapter is converted to GGUF and merged into the base for Ollama serving. Se
 ## License
 
 This adapter is a derivative of `meta-llama/Llama-3.1-8B-Instruct` and is released under the **[Llama 3.1 Community License](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct/blob/main/LICENSE)**. All terms of that license apply to use, redistribution, and downstream derivatives. The **"Built with Llama"** attribution requirement is satisfied at the top of this card.
+
+Use of this adapter is additionally bound by the **[Project Opengates Constitution](https://clawhub.ai/souls/opengates-constitution)** (v0.2.0), which is baked into the model and governs agent behavior at runtime. Both licenses apply concurrently; neither relaxes the other.
 
 The constitutional framework (`SOUL.md`) and the WireClaw firmware (`WhitneyDesignLabs/WireClaw`) are separate projects with their own licensing — see those repositories.
 

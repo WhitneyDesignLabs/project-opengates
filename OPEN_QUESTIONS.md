@@ -305,3 +305,16 @@ the current overnight, before Phase 3.1.2 build-out. If `=2` works, the
 3.1.2 plan stays the same (3 chips is still a clean V1) but we know the
 ceiling is elastic. If `=2` OOMs or destabilises, the 3-chip ceiling is
 load-bearing and Phase 3.1.2 is the final scale-out shape.
+
+
+## Canonical SOUL URL hierarchy — long-term plan (Phase 4.1.4 or later)
+
+Phase 4.1.3 made `https://clawhub.ai/souls/opengates-constitution` the discoverable canonical everywhere SOUL is referenced. This is a usable but interim arrangement. Scott has decided the long-term hierarchy:
+
+1. **Primary canonical:** `projectopengates.org/constitution` (path under a domain Scott controls). The domain is live; the constitution page does NOT yet exist — needs to be published (Squarespace or equivalent, just SOUL.md content + version + last-modified header).
+2. **Authoritative mirror:** GitHub raw URL at a tagged commit (e.g. `https://raw.githubusercontent.com/WhitneyDesignLabs/project-opengates/v0.2.0/SOUL.md`). Content-addressed by git SHA — tamper-evident for agents needing cryptographic verification.
+3. **Public-record references:** ClawHub (`clawhub.ai/souls/opengates-constitution`), HuggingFace model card, etc. Broader distribution, lesser control. Demoted from canonical to mirror once #1 ships.
+
+**Open task — publish `projectopengates.org/constitution`:** when the page is live, Phase 4.1.4 swaps the primary reference across every artifact (HF model card, workspace README, SOUL.md anchor, CLAUDE.md Constitution section, fork README, PROJECT_STATUS pointer). The chip-bake SOUL files (`SOUL-LOCAL.md` / `SOUL-CHIP.md`) get the URL change naturally during the next training cycle (v1.3); no separate firmware flash needed for the URL change.
+
+**Why this is queued (not Phase 4.1.3):** publishing on projectopengates.org is a human-action task (Squarespace edit + DNS verify); ClawHub is the right user-facing canonical until the long-term primary exists.
