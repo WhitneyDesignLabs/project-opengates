@@ -1,0 +1,62 @@
+# =============================================================================
+# WireClaw / Project Opengates — workspace .gitignore
+# =============================================================================
+# Hard exclusions covering: secrets, large regenerable data, build artifacts,
+# editor/tool state. Stage list is curated explicitly per phase-4.1.2 directive;
+# this .gitignore is the belt-and-suspenders.
+
+# -- secrets / credentials (NEVER commit) --
+Secrets.txt
+SetupBasics.txt
+*_token*
+*.env
+.env*
+tailscale-acl.json
+
+# -- local agent/editor state --
+.claude/
+tasks/
+*.swp
+*~
+*.bak
+
+# -- python caches & build artifacts --
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.pio/
+build/
+node_modules/
+
+# -- large regenerable corpus / proxy data --
+# Top-level /corpus/ is raw azza pulls — regenerable from the proxy.
+# (Leading slash anchors to repo root so it does NOT match bench/fork/lora/corpus/.)
+/corpus/
+
+# Lora-corpus repaired+raw JSONL goes to HF dataset, not repo. Keep:
+#  - quarantine/ (scrambled corpus + bug-doc README)
+#  - MANIFEST.md and any *.sample.jsonl (a small repo-friendly sample)
+bench/fork/lora/corpus/*.jsonl
+bench/fork/lora/corpus-raw/
+bench/fork/lora/seed-corpus/
+
+# Haiku-labeled JSONs are corpus data, not code — exclude with the corpus.
+bench/fork/lora/corpus-labels/*.json
+
+# Training output (LoRA adapters, GGUFs, training logs) goes to HF, not repo.
+bench/fork/lora/training/output/
+
+# HF publish staging — model card stays, large binaries do not.
+bench/fork/lora/hf-publish/*.safetensors
+bench/fork/lora/hf-publish/*.gguf
+bench/fork/lora/hf-publish/*.tar.gz
+
+# -- temp pull directories (regenerable from the fleet) --
+/tmp-overnight-jsonl/
+/tmp-overnight-pull/
+/tmp-proxy-*/
+
+# -- top-level ephemera --
+/esp-web-tools-logs.txt
+/RackPSU-Rig/
