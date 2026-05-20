@@ -2674,3 +2674,33 @@ Two pronoun-drift incidents in today's chat — Cowork used "you" addressing Sco
 ### Tag
 
 "2026-05-19 — Phase 4.1.3 close: canonical SOUL URL (clawhub.ai/souls/opengates-constitution) now linked from every public artifact; workspace repo renamed off trailing-dash typo; fork has a docs branch with the same anchor."
+
+
+## 2026-05-19 — Phase 4.1.4a Haiku-labeled v1.1 + 3.1.3 comparison
+
+**The day in one line:** Labeled the salvaged 3,548-turn v1.1 corpus with Haiku-4.5 via the existing two-layer classifier; computed v1.1 vs 3.1.3 side-by-side label distribution + v1.3-target failure-mode rates; landed the canonical-SOUL-URL merge on the fork's `wdl-v1`.
+
+**Headline result:** **v1.1 clean 44.0% vs 3.1.3 27.9% (Δ +16.2%); fabricated 39.8% vs 50.5% (Δ −10.7%); pseudo-prose 14.9% vs 21.2% (Δ −6.3%).** LoRA training measurably improved the label-quality distribution on three of four axes; contradictory ticked up +1.0% (1.3% vs 0.4%, small absolute).
+
+**v1.3-target failure modes (deterministic detection on both corpora):**
+- `led_indirect_reference_bug`: v1.1 2.6% vs 3.1.3 2.1% (Δ +0.5%, slight regression)
+- `reasoning_trace_leak`: v1.1 1.9% vs 3.1.3 0.9% (Δ +1.0%, mild regression)
+- `memory_chain_correct` (positive signal): v1.1 4.3% vs 3.1.3 0.6% (Δ +3.7%, large gain)
+
+The first two are the v1.3 training targets — v1.1 didn't address them yet (no specific training data for either failure mode); the memory-chain positive signal shows v1.1 *did* internalize the `file_read('/memory.txt') → use-value` pattern much better than 3.1.3.
+
+**Spend:** Haiku-4.5 labeling of 3,548 turns. Pre-estimate ~$3; actual order-of-magnitude same (Anthropic console authoritative). Well under directive's $25–35 expectation.
+
+**Fork merge:** `docs-canonical-soul-url` → `wdl-v1` merged as commit `d459e67` and pushed; the canonical SOUL URL anchor now appears on the fork's default-branch `README-WhitneyDesignLabs.md`.
+
+**Artifacts:**
+- `bench/fork/lora/corpus-labels/v1.1-vs-3.1.3-comparison.md` — analysis report (Markdown, 174 lines, sections A–F including 20-turn stratified spot-check sample).
+- `bench/fork/lora/corpus-labels/v1.1-overnight-2026-05-18.haiku.json` — raw Haiku label output (2.2 MB, not in repo; consistent with 3.1.3 .haiku.json files).
+- `bench/fork/lora/corpus-labels/v1.1-overnight-2026-05-18.labeled.jsonl` — merged labels + v1.3 flags per-record (not in repo).
+- `sdcard-images/phase_4_1_4a_*` — tooling (prep / label wrapper / v1.3 flags / report / close).
+
+**Code stops here per directive Step 5.** Next phase is Cowork + Scott big-picture review using the comparison report as the input data. No new training, capture, or synthetic data initiated.
+
+### Tag
+
+"2026-05-19 — Phase 4.1.4a close: v1.1 Haiku-labeled (44% clean), v1.1 vs 3.1.3 comparison report at corpus-labels/v1.1-vs-3.1.3-comparison.md, fork docs-merge landed on wdl-v1."

@@ -1,3 +1,128 @@
+# Code Handback — Phase 4.1.4a COMPLETE — 2026-05-19 late evening
+
+## Status: ✅ ALL FIVE STEPS LANDED. Labeling done unattended; analysis report ready for the big-picture review. Code stops here per directive Step 5.
+
+### Step 1 — fork merge: DONE
+`docs-canonical-soul-url` → `wdl-v1` merged as **`d459e67`** and pushed to `origin/wdl-v1`. The canonical Project Opengates Constitution URL anchor now appears on the fork's default-branch `README-WhitneyDesignLabs.md` view — the lingering verification-surface-8 gap from Phase 4.1.3 is closed.
+
+### Step 2 — corpus + baseline + classifier located
+- **v1.1 corpus to label:** `bench/fork/lora/corpus/v1.1-overnight-2026-05-18.REPAIRED.jsonl` — **3,548 turns** (the salvaged post-pairing-fix corpus, fully present and parseable).
+- **3.1.3 baseline labels:** `bench/fork/lora/corpus-labels/3.1.3-2026-05-16-{c6-02,c6-03,pilot}.haiku.json` — same `{summary, records}` shape used by the canonical two-layer classifier. Combined c6-02 + c6-03 (the v1.1-comparable fleet subset) = **3,052 turns** with distribution clean 850 (27.9%) / fabricated 1,541 (50.5%) / pseudo-prose 646 (21.2%) / contradictory 11 (0.4%) / null 4 (0.1%).
+- **Classifier:** `bench/wrap_up_classify.py`, uses `claude-haiku-4-5-20251001`, two-layer (deterministic regex → Haiku judge). Argparse-driven (`--corpus`, `--out`, `--use-haiku`). `anthropic 0.102.0` SDK installed. `ANTHROPIC_API_KEY` lives in `Secrets.txt` (gitignored).
+
+### Step 3 — labeling: DONE
+Pre-spend cost estimate: **~$3** (1.75M input tokens × $1/M Haiku-4.5 input + 280K output × $5/M ≈ $3.20). Well under the directive's $25–35 expectation. Per blanket pre-authorization, fired without re-gating.
+
+Labeling ran ~75 minutes wall time. Output written to `bench/fork/lora/corpus-labels/v1.1-overnight-2026-05-18.haiku.json` (2.2 MB, 3,548 records). **v1.1 label distribution:**
+
+| label | count | rate |
+|---|---:|---:|
+| clean | 1,562 | **44.0%** |
+| fabricated | 1,411 | 39.8% |
+| pseudo-prose | 527 | 14.9% |
+| contradictory | 47 | 1.3% |
+| null | 1 | 0.0% |
+
+v1.3-target failure-mode flags computed deterministically on top of the labels (no extra API spend) via `phase_4_1_4a_v13_flags.py`:
+
+| flag | hits | rate |
+|---|---:|---:|
+| led_indirect_reference_bug | 92 | 2.6% |
+| reasoning_trace_leak | 67 | 1.9% |
+| memory_chain_correct (positive) | 152 | 4.3% |
+
+Merged labels + flags + per-record metadata → `bench/fork/lora/corpus-labels/v1.1-overnight-2026-05-18.labeled.jsonl` (3,548 lines).
+
+### Step 4 — comparison report: DONE
+Written to `bench/fork/lora/corpus-labels/v1.1-vs-3.1.3-comparison.md` (174 lines, sections A–F):
+- **A.** Overall label distribution: v1.1 vs 3.1.3 side-by-side with deltas.
+- **B.** Per-chip breakdown (c6-02 vs c6-03 in both corpora).
+- **C.** v1.1 per-persona breakdown (all 7 personas).
+- **D.** v1.3-target failure-mode rates side-by-side (v1.1 vs 3.1.3 using the SAME deterministic detector applied to both corpora).
+- **E.** Top 10 failure-mode buckets by deterministic-evidence grouping, with example wrap-ups.
+- **F.** 20-turn stratified spot-check sample (3 turns × all 5 label categories where present), prompt + wrap-up + flag annotations.
+
+**Topline (vs 3.1.3 c6-02+c6-03 combined baseline):**
+
+| | v1.1 | 3.1.3 | Δ |
+|---|---:|---:|---:|
+| clean | 44.0% | 27.9% | **+16.2%** |
+| fabricated | 39.8% | 50.5% | **−10.7%** |
+| pseudo-prose | 14.9% | 21.2% | **−6.3%** |
+| contradictory | 1.3% | 0.4% | +1.0% |
+| led_indirect_reference_bug | 2.6% | 2.1% | +0.5% |
+| reasoning_trace_leak | 1.9% | 0.9% | +1.0% |
+| memory_chain_correct (+) | 4.3% | 0.6% | **+3.7%** |
+
+**Interpretation handed off (not interpreted in chat):** LoRA training measurably improved the headline distribution on three axes. v1.3 training targets (`led_indirect_reference_bug` + `reasoning_trace_leak`) were NOT addressed by v1.1 (no specific training data for either); the deterministic detector confirms they sit at 2–3% rates in v1.1. The memory-chain positive signal (`memory_chain_correct`) jumped 7× from 0.6% → 4.3% — strong evidence v1.1 internalized the `file_read('/memory.txt') → use-value` pattern, which is the foundation for the v1.3 led_indirect_reference_bug fix.
+
+### Step 5 — close
+- Worklog entry appended to `sync/worklog.md`.
+- Tooling committed to repo: `sdcard-images/phase_4_1_4a_*.{sh,py}` (5 scripts), `phase_4_1_3_*.sh` carryovers, `.gitignore` extended to exclude `corpus-labels/*.jsonl` consistent with the `*.json` label-file exclusion.
+- Labeled artifacts (`.haiku.json`, `.input.json`, `.labeled.jsonl`) NOT committed — consistent with the existing 3.1.3 `.haiku.json` files being out-of-repo (label/corpus data goes to HF dataset, future Phase 4.1.x decision). They live on the filesystem at `bench/fork/lora/corpus-labels/` and are deterministically regenerable from the source.
+- Final commit pushed to `origin/main`. Comparison report renders on the public repo.
+
+### Spend
+**Pre-estimate ~$3.20 (Haiku-4.5 pricing) for 3,548 labeled turns.** Anthropic console authoritative on the exact figure; no rate-limit or quota events encountered. Well under the directive's $25–35 budget.
+
+### Operator hygiene flag
+My earlier sed redaction had a regex-flag bug (no `-E` for extended regex) so the full `sk-ant-api03-...` key from `Secrets.txt` printed in the chat transcript before I caught it. `Secrets.txt` is gitignored — no exfiltration to git/HF/public — but the key value sits in this conversation's transcript. **Recommend rotating it at your convenience.** Going forward I'm using Python-regex extraction directly into env (no `cat`/`grep` of Secrets.txt) for any further work.
+
+### Standing-by note
+**STOPPED.** Did NOT initiate v1.3 training, did NOT initiate a new capture, did NOT add synthetic data, per directive Step 5 constraint. Next phase is Cowork + Scott's big-picture goal/metrics review using the comparison report as input data.
+
+### Tag
+"2026-05-19 — Phase 4.1.4a close: v1.1 Haiku-labeled (44% clean, ↑16 pts vs 3.1.3), v1.1 vs 3.1.3 comparison report at corpus-labels/v1.1-vs-3.1.3-comparison.md, fork docs-merge landed on wdl-v1; v1.3 training targets clearly identified (led_indirect_reference_bug + reasoning_trace_leak)."
+
+---
+
+# Code Handback — Phase 4.1.3 COMPLETE — 2026-05-19 evening
+
+## Status: ✅ Canonical SOUL URL discoverability landed everywhere. Repo renamed off the trailing-dash typo. Code stops here per cadence; one optional open item (merge `docs-canonical-soul-url` into fork `wdl-v1`) flagged for Scott.
+
+### What shipped (Phase 4.1.3)
+
+**Workspace repo — https://github.com/WhitneyDesignLabs/project-opengates** *(renamed)*
+| Commit / Tag | What |
+|---|---|
+| `02b7825` | phase 4.1.3: canonical SOUL URL discoverability + repo rename (10 files, +515/-281) |
+| **Tag** `v1.1-milestone-canonical-url` | annotated, on `02b7825`; pushed |
+
+**Firmware fork — https://github.com/WhitneyDesignLabs/WireClaw**
+| Branch / Commit | What |
+|---|---|
+| `docs-canonical-soul-url` / `54d6cea` | Constitutional Framework section with canonical URL added to `README-WhitneyDesignLabs.md` |
+
+NOT merged into `wdl-v1` (the fork's working branch). Scott decision — fast-forward / PR via `https://github.com/WhitneyDesignLabs/WireClaw/pull/new/docs-canonical-soul-url` if you want the canonical anchor visible on the fork's default-branch README view; otherwise the branch is the durable artifact.
+
+**HuggingFace model — https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora**
+| Commit | What |
+|---|---|
+| `40ab34b` | Add canonical SOUL URL anchor + article citations in out-of-scope use |
+
+### Verification (Step 9 — curl pass)
+All seven active public surfaces serve the canonical URL `clawhub.ai/souls/opengates-constitution` with HTTP 200 and ≥1 hit: workspace README (3), SOUL.md (2), CLAUDE.md (1), PROJECT_STATUS.md (2), HF model card (4), fork `docs-canonical-soul-url` branch (1). Canonical URL itself loads HTTP 200. Fork `wdl-v1` shows 0 hits as expected (branch not merged).
+
+### Notable decisions encoded
+- **clawhub.ai is the user-facing canonical** per Scott. SOUL-LOCAL.md / SOUL-CHIP.md already reference it (with `www.` prefix, functionally equivalent) and were left untouched as as-trained artifacts — modifying them now creates a training-data-vs-shipped-repo drift that's harmless for discoverability and best resolved naturally at the next training cycle (v1.3).
+- **SOUL.md article content untouched** per directive constraint. Only the top-of-file anchor block was added; the constitution body is byte-identical to what was published in `v1.1-milestone`.
+- **No upstream PR** from the fork's `docs-canonical-soul-url` branch — this is WhitneyDesignLabs-specific framing, not appropriate for Mario's upstream.
+- **Long-term canonical hierarchy queued in `OPEN_QUESTIONS.md`** for Phase 4.1.4: primary becomes `projectopengates.org/constitution` once published; clawhub.ai demotes to mirror; GitHub raw at tagged-commit becomes the cryptographically-verifiable authoritative mirror.
+
+### Out-of-scope still queued
+- v1.3 training (gated on big-picture review)
+- Haiku labeling of REPAIRED corpus
+- Phase 4.0.4 firmware hardening (rule revalidation, snprintf audit, crash watchdog)
+- Phase 4.0.5 c6-01 reflash
+- Mario upstream PR follow-throughs (P05 #12 still 0 comments)
+- Broader fleet expansion
+- Phase 4.1.4 (projectopengates.org canonical hierarchy swap)
+
+### Tag
+"2026-05-19 — Phase 4.1.3 close: canonical SOUL URL discoverability landed on workspace repo + firmware fork branch + HuggingFace model; workspace repo renamed off trailing-dash typo; tag v1.1-milestone-canonical-url annotated on origin/main."
+
+---
+
 # Code Handback — Phase 4.1.2 COMPLETE — 2026-05-19 evening
 
 ## Status: ✅ ALL DIRECTIVE STEPS LANDED. Project milestone published. Code stops here per Step 9 — next phase is Scott + Cowork's big-picture goal/metrics review before any v1.3 training authorization.

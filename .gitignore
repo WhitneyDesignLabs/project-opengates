@@ -68,3 +68,7 @@ bench/fork/lora/hf-publish/*.tar.gz
 # -- bench run outputs (not code) --
 /bench/results/
 *.testmarker
+
+# Haiku-merged label JSONL is large + regenerable; same treatment as the
+# *.json haiku output (already excluded above).
+bench/fork/lora/corpus-labels/*.jsonl

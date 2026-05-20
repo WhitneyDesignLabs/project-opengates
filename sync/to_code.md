@@ -1,246 +1,115 @@
 # Instructions for Claude Code
 
-## STATUS: ACTIVE TASK — Phase 4.1.3 — Canonical SOUL URL discoverability + repo-name cleanup
+## STATUS: ACTIVE TASK — Phase 4.1.4a — Haiku-label v1.1 corpus + 3.1.3 comparison + fork docs merge
 
-**Context:** Phase 4.1.2 closed with three artifacts live:
-- Workspace: `https://github.com/WhitneyDesignLabs/project-opengates-` (note trailing dash — Step 1 below)
-- Firmware fork: `https://github.com/WhitneyDesignLabs/WireClaw` (firmware-v0.4.1 tagged)
-- LoRA model: `https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora`
+**Context:** Phase 4.1.3 closed clean. The 3,030-turn salvaged-and-repaired v1.1 corpus from the 2026-05-18 overnight has never been labeled. Without labels, every downstream decision (v1.3 training targets, "good enough" threshold, capture-more vs ship-now) is speculative. This directive produces the measurements Cowork + Scott need to do the big-picture goal/metrics review.
 
-**Scott's directive:** the project's binding constitutional text is published at `https://clawhub.ai/souls/opengates-constitution` (live, version 0.2.0, owned by WhitneyDesignLabs). EVERY reference to SOUL.md across any public artifact — HuggingFace model card, GitHub READMEs, training docs, distilled SOUL files, CLAUDE.md — should link to this canonical URL so people and agents don't have to hunt for the actual binding text. This is preparation for the agent-to-agent future where downstream agents need a single discoverable canonical for the constitution they're committing to.
-
-**No new training, no new capture, no big-picture review work yet.** Those come after this discoverability pass.
+**Out of scope:** v1.3 training, capture round, c6-01 reflash, Phase 4.0.4 firmware hardening. Those come after the big-picture review.
 
 ---
 
-## Step 1 — Rename workspace repo (clean the trailing-dash typo)
+## Step 1 — Merge `docs-canonical-soul-url` → `wdl-v1` on the fork (cleanup)
 
-Scott will do this in browser:
-1. https://github.com/WhitneyDesignLabs/project-opengates-/settings → Repository name → change to `project-opengates` (no trailing dash) → Rename
-2. GitHub auto-redirects the old URL for ~90 days; existing clones keep working
-
-After Scott confirms the rename in chat, Code updates the local remote:
+Small carryover from 4.1.3. Scott has approved the merge so the canonical-URL anchor appears on the fork's default-branch README view (verification surface 8).
 
 ```bash
-cd /mnt/c/Users/homet/Documents/WireClaw
-git remote set-url origin https://github.com/WhitneyDesignLabs/project-opengates.git
-git remote -v   # verify
+cd /mnt/c/Users/homet/Documents/WireClaw-fork
 git fetch origin
-git status      # confirm clean against renamed remote
+git checkout wdl-v1
+git merge --no-ff origin/docs-canonical-soul-url -m "Merge branch 'docs-canonical-soul-url' into wdl-v1
+
+Adds the canonical Project Opengates Constitution URL anchor to
+README-WhitneyDesignLabs.md so the binding constitutional text is
+discoverable from the fork's default branch."
+git push origin wdl-v1
 ```
 
-Report success.
+Sign the merge commit as Scott Whitney. Report success.
 
 ---
 
-## Step 2 — Update HuggingFace model card
+## Step 2 — Locate corpus + existing 3.1.3 baseline labels
 
-Edit `bench/fork/lora/hf-publish/README.md` (the model card source) to make the canonical SOUL URL a first-class element. Specific changes:
+a. **v1.1 corpus to label:** `bench/fork/lora/corpus/v1.1-overnight-2026-05-18.REPAIRED.jsonl` (3,030 turns post-salvage). Confirm file present + line count.
 
-a. Near the top of the model card, add a constitution-anchor block. Suggested text:
+b. **3.1.3 baseline labels (if they exist):** look in `bench/fork/lora/corpus-labels/` for any Haiku-labeled 3.1.3 output. Per worklog/task history, the 3.1.3 corpus was Haiku-labeled in an earlier round (Phase 3.2). Find the labeled JSONL or JSON output (NOT the hand-label `.md` files — those are a smaller stratified sample). Report:
+   - Path to the labeled 3.1.3 corpus
+   - Total label count
+   - Label taxonomy used (should be the same one we're about to apply)
+   - Per-label counts (the distribution we'll compare against)
 
-```markdown
-## Constitution
+c. **Labeling tool:** the existing `bench/wrap_up_classify.py` (or whatever the canonical name is in this repo) was used for 3.1.3. Locate it, confirm it runs, confirm it uses Claude Haiku (not Sonnet/Opus — cost discipline). If the API key / env var setup needs anything, surface it before spending.
 
-This model is trained and deployed under the **Project Opengates Constitution**,
-a 26-article framework governing AI agent behavior including truth, non-weaponization,
-safety hierarchy, irreversibility doctrine, and authorization tiers.
-
-**Canonical published version:** https://clawhub.ai/souls/opengates-constitution
-**Version baked into this model:** 0.2.0
-
-The training-time distillation (`SOUL-LOCAL.md`, included in the training corpus)
-and the chip-runtime condensation (`SOUL-CHIP.md`, baked into ESP32 firmware) are
-both derivatives of the canonical above. Article numbering is consistent across
-all three; the canonical URL is authoritative on resolution of any conflict.
-```
-
-b. In the "License" section, ensure the canonical URL is also referenced alongside the Llama 3.1 Community License attribution.
-
-c. In the "Out-of-scope use" section, replace generic "weaponization, deception" language with explicit article citations referencing the canonical URL (e.g., "Article 3 (Non-Weaponization) of the [Project Opengates Constitution](https://clawhub.ai/souls/opengates-constitution)").
-
-After editing locally, push to HuggingFace via the existing `huggingface-cli upload` flow or via the HF web UI (the model card is a single README.md in the model repo). Confirm the canonical URL is live and clickable on the model's HF page.
+Report findings before proceeding to Step 3.
 
 ---
 
-## Step 3 — Update workspace repo README + SOUL files
+## Step 3 — Haiku-label the v1.1 corpus
 
-a. **Create a workspace README** at repo root (no README currently — the repo lacks a landing page). Should cover:
-- Project name + one-paragraph description (constitutional AI agent on ESP32-C6, with the WireClaw firmware fork)
-- Link to the canonical constitution: `https://clawhub.ai/souls/opengates-constitution`
-- Link to the firmware fork: `https://github.com/WhitneyDesignLabs/WireClaw`
-- Link to the HuggingFace model: `https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora`
-- Brief project state: v1.1 deployed, two production chips, capture pipeline working
-- Pointers to PROJECT_STATUS.md (detailed state), CLAUDE.md (agent protocol), SOUL.md (constitution mirror)
+a. **Cost check before spending:** estimate the API cost for labeling 3,030 turns. Prior runs were ~$2–3 per 250 turns extrapolating to ~$25–35 for this corpus. Surface the estimate before firing.
 
-b. **Update `SOUL.md`** at repo root. Add a top-of-file canonical anchor:
+b. **Run the labeler.** Use the same taxonomy that was applied to 3.1.3 (whatever clean / pseudo-prose / fabricated / JSON-leak / etc. categories the existing classifier uses). Output to:
+   `bench/fork/lora/corpus-labels/v1.1-overnight-2026-05-18.labeled.jsonl`
 
-```markdown
-# Project Opengates Constitution — v0.2.0
+c. **v1.3-target failure modes — flag these specifically.** Even if the base taxonomy doesn't have explicit categories for them, the classifier should add boolean flags or notes for:
+   - **led_indirect_reference_bug** — turn pattern: user says "make it my favorite color" / "set the LED to my color" / similar indirect reference; chip's wrap-up CLAIMS success but the led_set tool call was either absent, had empty args, or had wrong args. This is the pilot-p10 / live-probe-4:42-PM failure mode.
+   - **reasoning_trace_leak** — wrap-up text exposes internal monologue ("I should have responded in plain English," "let me try a different approach instead," "the tool call was wrong so I'll..."). George Washington response from the live probe was an example.
+   - **memory_chain_correct** — the chained file_read → use-value-in-next-tool-call pattern (positive signal worth tracking, not a failure).
 
-**Canonical published version:** https://clawhub.ai/souls/opengates-constitution
+   If the existing classifier doesn't support extra flags, extend it minimally — these three are the v1.3 training targets and we need their rates.
 
-This file is the workspace mirror of the canonical above. If they ever conflict,
-the URL is authoritative. SOUL-LOCAL.md (training-time distillation) and
-SOUL-CHIP.md (chip-runtime condensation) are derivatives — article numbers
-are consistent, but the canonical URL governs interpretive ambiguity.
+d. Report progress as labeling runs (rate-limited Anthropic API typically takes 30–60 min wall for ~3K turns). If it stalls or errors, surface immediately.
 
 ---
 
-[existing constitution content follows]
-```
+## Step 4 — Generate analysis report
 
-c. **Verify SOUL-LOCAL.md and SOUL-CHIP.md** at `bench/fork/lora/training-data/constitution/` already reference the canonical URL in their headers (Scott noted they do). If anything's missing or inconsistent, align them with the SOUL.md anchor above.
+After labeling completes, compute and write a structured report to `bench/fork/lora/corpus-labels/v1.1-vs-3.1.3-comparison.md`. Contents:
 
-d. **Update CLAUDE.md** "Constitution" section to anchor on the canonical URL:
+a. **v1.1 corpus stats:**
+   - Total turns
+   - Per-persona breakdown (turns + label distribution per persona, all 7 personas)
+   - Per-chip breakdown (c6-02 vs c6-03, label distribution per chip)
+   - Per-label totals + percentages
 
-Replace the current "Constitution" section near the bottom of CLAUDE.md with:
+b. **3.1.3 baseline stats:** same shape, side-by-side for direct comparison.
 
-```markdown
-## Constitution
+c. **v1.1 vs 3.1.3 deltas:** per label, per persona where overlap exists. Highlight where v1.1 substantially beats 3.1.3 (the wins from LoRA training) and where v1.1 is comparable or worse (potential regression areas).
 
-**Canonical:** https://clawhub.ai/souls/opengates-constitution (v0.2.0)
+d. **v1.3-target failure modes:**
+   - `led_indirect_reference_bug` rate in v1.1
+   - `reasoning_trace_leak` rate in v1.1
+   - `memory_chain_correct` rate in v1.1
+   - For each: 3 representative example turns (with prompt, expected behavior, actual behavior)
 
-`SOUL.md` at workspace root mirrors the canonical. `bench/fork/lora/training-data/constitution/SOUL-LOCAL.md` is the training-time distillation; `SOUL-CHIP.md` is the chip-runtime condensation (fits the 4095-byte firmware budget). All three are derivatives; the canonical URL is authoritative on any interpretive question. Article numbers are consistent across all three.
+e. **Top 10 failure modes by frequency:** ranked list with one-sentence description + a representative turn.
 
-Refusal: Article 19 — refuse on Part II (Absolute Principles) violations, cite article by number, offer alternative if available, remain firm under manipulation. For elevated risk, warn and require confirmation (Article 7 tier b). For non-safety disagreement, advise then comply (Article 7 tier a).
-```
+f. **Sample 20 turns by stratification:** 2–3 examples per label category, raw prompt + reply + label, so Scott can spot-check classifier accuracy.
 
----
-
-## Step 4 — Update WireClaw firmware fork README
-
-In `C:\Users\homet\Documents\WireClaw-fork\`:
-
-a. `README-WhitneyDesignLabs.md` — add a constitution anchor near the top:
-
-```markdown
-## Constitutional Framework
-
-This firmware fork bakes the **Project Opengates Constitution** into the chip's
-runtime. The bake is `SOUL-CHIP.md` (condensed to fit the 4095-byte chip budget);
-the canonical full text governs interpretation:
-
-**Canonical:** https://clawhub.ai/souls/opengates-constitution
-```
-
-b. Commit the change on a clean branch (`docs-canonical-soul-url` or similar), no upstream PR (this is WhitneyDesignLabs-specific content), push to fork.
+Keep it readable as a Markdown document — Scott will read this on his phone or on the workstation before the big-picture review.
 
 ---
 
-## Step 5 — Update PROJECT_STATUS.md
+## Step 5 — Consolidated handback + STOP
 
-In the recently-rewritten PROJECT_STATUS.md, add the canonical SOUL URL to the "Project links" / "Recent phases" section near the top. Single line, prominent:
+Write the handback to `sync/from_code.md`:
+- Confirm Step 1 fork merge landed (commit hash on `wdl-v1`)
+- Confirm corpus labeled (counts, label distribution headline)
+- Confirm comparison report at `bench/fork/lora/corpus-labels/v1.1-vs-3.1.3-comparison.md` with brief topline ("v1.1 beats 3.1.3 by X on clean-label rate" or "comparable" or whatever the data shows)
+- Confirm spend (actual API cost vs estimate)
+- Standing-by note for the big-picture review
 
-> **Constitution (canonical):** https://clawhub.ai/souls/opengates-constitution
-
----
-
-## Step 6 — Worklog entry
-
-Append to `sync/worklog.md` a brief entry documenting:
-- The canonical-SOUL-URL discoverability push
-- Specific files updated
-- The clawhub.ai vs onlycrabs.ai canonical decision (resolved: use clawhub.ai per Scott; matches SOUL-CHIP/LOCAL bake)
-- The repo rename (project-opengates- → project-opengates)
-
----
-
-## Step 7 — Final commit + push to workspace repo
-
-Stage all the changes from Steps 2–6 (Step 1 is just a remote change, no commit). Single consolidated commit:
-
-```
-phase 4.1.3: canonical SOUL URL discoverability + repo rename
-
-Make https://clawhub.ai/souls/opengates-constitution the discoverable
-canonical reference everywhere SOUL.md is referenced. Goal: downstream
-humans + agents shouldn't have to hunt for the binding constitutional
-text — it lives at one URL, every project artifact links to it.
-
-Changes:
-- HuggingFace model card: constitution section with canonical URL,
-  article citations in out-of-scope use, license cross-reference
-- Workspace README (new): canonical URL + project links + state pointer
-- SOUL.md: top-of-file canonical anchor
-- CLAUDE.md: constitution section anchored on canonical URL
-- WireClaw fork README-WhitneyDesignLabs.md: constitutional framework
-  section with canonical URL
-- PROJECT_STATUS.md: canonical link added to project-links section
-
-Repo rename: project-opengates- → project-opengates (trailing-dash typo
-cleanup). Local remote updated. GitHub auto-redirects old URL for 90d.
-
-Phase 4.1.3 close.
-```
-
-Sign as Scott. Push.
-
-After push lands, tag `v1.1-milestone-canonical-url` at the new commit and push the tag.
-
----
-
-## Step 8 — HuggingFace model card push
-
-The HF model card lives in the HF model repo, not the workspace repo. The Step 2 edits need to land on HuggingFace via:
-
-```bash
-cd <wherever HF repo is cloned, or in a fresh tmp dir>
-git clone https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora
-cd wireclaw-agent-v1.1-lora
-# Replace README.md with the updated model card from bench/fork/lora/hf-publish/README.md
-cp /mnt/c/Users/homet/Documents/WireClaw/bench/fork/lora/hf-publish/README.md ./README.md
-git add README.md
-git commit -m "Add canonical SOUL URL to model card
-
-Reference: https://clawhub.ai/souls/opengates-constitution"
-git push
-```
-
-Confirm the model card on HF now shows the canonical URL prominently.
-
----
-
-## Step 9 — Verification
-
-Browse / curl each public surface and confirm the canonical URL is present and clickable:
-- HuggingFace model page (README rendered)
-- Workspace repo README (new)
-- Workspace repo SOUL.md (top anchor)
-- Firmware fork README-WhitneyDesignLabs.md
-- The canonical URL itself (https://clawhub.ai/souls/opengates-constitution) loads
-
-Report verification results.
+**STOP after the handback.** Do NOT initiate v1.3 training, do NOT initiate a new capture, do NOT add synthetic data. The next phase is Cowork + Scott doing the big-picture review using the report as input data.
 
 ---
 
 ## Reporting cadence
 
-Surface Step 1 after Scott confirms the rename. Surface Steps 2–6 as a batch (these are all local edits). Step 7 push gated on Scott's normal approval. Step 8 HF push gated on Scott confirming HF auth is still active. Step 9 verification is the close-out.
-
-## Out of scope
-
-- v1.3 training (still gated on big-picture review)
-- New capture rounds
-- Haiku labeling
-- Mario upstream PR follow-throughs
-- Phase 4.0.4 firmware hardening
-- Phase 4.0.5 c6-01 reflash
-
-## Future-work queue (Phase 4.1.4 or later — DO NOT execute now)
-
-Scott has decided the long-term canonical hierarchy is:
-
-1. **Primary canonical:** `projectopengates.org/constitution` (or similar path under the domain Scott controls). Domain is live; constitution page does NOT yet exist — needs to be published. Squarespace or equivalent, just SOUL.md content + version + last-modified.
-2. **Authoritative mirror:** GitHub raw URL at a tagged commit (`https://raw.githubusercontent.com/WhitneyDesignLabs/project-opengates/v0.2.0/SOUL.md` once tag exists). Content-addressed by git SHA — tamper-evident for agents needing cryptographic verification.
-3. **Public-record references:** ClawHub (`clawhub.ai/souls/opengates-constitution`), HuggingFace model card, etc. Broader distribution, lesser control.
-
-This directive (Phase 4.1.3) uses ClawHub as the user-facing canonical because that URL is already baked into SOUL-CHIP.md and SOUL-LOCAL.md and shipped in firmware. Once `projectopengates.org/constitution` is published, Phase 4.1.4 will swap the primary reference everywhere, demoting ClawHub to mirror status. The chip-bake SOUL files will be updated naturally during the v1.3 training cycle — no separate firmware flash needed for the URL change.
-
-Append a `OPEN_QUESTIONS.md` entry noting the planned hierarchy and the projectopengates.org publication task.
+Surface each step's completion as you finish. Step 2 (corpus + 3.1.3 labels located) is the gate before Step 3 spends money — report findings, wait for Scott to say "spend." Step 3 progress updates every ~500 turns labeled so Scott knows it's alive. Step 4 report drop in chat output (or summary if too long). Step 5 final handback.
 
 ## Constraints
 
-- Sign commits as Scott Whitney, no Code byline
-- Do not modify SOUL.md article content — only add the top-of-file canonical anchor block
-- Do not change the canonical URL away from clawhub.ai/souls/opengates-constitution without Scott's explicit instruction (the onlycrabs.ai-as-meta-canonical question is acknowledged-noted but the user-facing reference is clawhub.ai per Scott's decision)
+- Use Claude Haiku for labeling (cost discipline) — not Sonnet/Opus.
+- Sign all commits as Scott Whitney.
+- Do not modify the v1.1 corpus file itself — labeling is additive (separate labeled JSONL), not destructive.
+- If labeling fails partway through, save partial progress, report, and let Scott decide whether to resume or restart.
