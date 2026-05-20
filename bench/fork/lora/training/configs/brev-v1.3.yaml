@@ -1,0 +1,30 @@
+# wireclaw-v1.3 LoRA training — Brev cloud config (Phase 4.2.1.C)
+# Same recipe as v1.2 (brev.yaml). Only changes: train_file -> v1.3-train.jsonl,
+# output_dir -> wireclaw-v1.3-brev. val_file reused from v2 to keep eval-loss
+# comparable across the v1.2 -> v1.3 step.
+base_model: meta-llama/Llama-3.1-8B-Instruct
+train_file: /home/ubuntu/bench/fork/lora/training-data/v1.3-train.jsonl
+val_file:   /home/ubuntu/bench/fork/lora/training-data/wireclaw-v2-val.jsonl
+output_dir: /home/ubuntu/bench/fork/lora/training/output/wireclaw-v1.3-brev
+seed: 42
+
+# Model precision and attention
+compute_dtype: bfloat16
+attn_impl: sdpa  # FlashAttention2 unavailable on Brev (per v1.2 BUILD-LOG)
+
+# LoRA — same as v1.2
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+# Training — same as v1.2
+epochs: 3
+batch_size: 8
+grad_accum: 1
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+max_seq_length: 3072  # SOUL-LOCAL ~1500 + user + assistant + buffer
+logging_steps: 10

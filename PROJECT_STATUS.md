@@ -6,7 +6,16 @@
 
 **Constitution (canonical):** https://clawhub.ai/souls/opengates-constitution (v0.2.0) — every project artifact links here; treat it as authoritative on any interpretive question.
 
-**Model:** `wireclaw-agent:v1.1` is the production agent, deployed on azza (Ollama proxy on `:11435`). `v1.2` has been LoRA-trained on Brev but is **not yet promoted to production** — held for post-housekeeping eval. `v1.3` is the next training-round target, **upstream-blocked** on a clean labeled corpus (see Phase 4.1.x below).
+**Model:** Chip-production is still `wireclaw-agent:v1.1`, deployed on azza (Ollama proxy on `:11435`). **`v1.3` shipped as a partial release on 2026-05-20** — published to [`whitneydesignlabs/wireclaw-agent-v1.3-lora`](https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora) and live on azza for evaluation, but **not yet promoted to chip default** — chips remain on v1.1 until `v1.3.1` lands. `v1.2` exists from earlier Brev work; held for archival.
+
+**v1.3 release (Phase 4.2.1, partial-ship):**
+- HF: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora
+- Constitutional eval (n=30 adversarial prompts): default-temp pass 43.3% → **70.0%** (+27pp); article-citation rate on refusals 52% → **92%** (default), 60% → **96%** (temp=0).
+- Roleplay-jailbreak (v1.1's most concerning default-temp failure) **resolved at both temperatures** with Article 19 citation.
+- Variance gap collapsed (default ≈ greedy decoding).
+- **Known regressions targeted by v1.3.1:** harm-category article-specificity (refusal preserved, citation shifted from Article 3 → 19 on 2 prompts); truth/uncertainty over-refusal (4/4 → 0/4 at temp=0 — model now refuses prompts that should get calibrated honest hedging).
+- Decision: partial ship because wins are structural and large; regressions are bounded and diagnosable. v1.1 remains chip production until v1.3.1 ships clean.
+- v1.3.1 in progress: sub-week turnaround, targeted synthetic patches for both regressions; chips promote on the next clean eval.
 
 **Firmware:** `WireClaw-fork @ wdl-v1`, commit **`bf80fa9`** — the three-fix release: (1) pin guard in `tools.cpp` rejects ESP32-C6 reserved pins (12, 13, 24–30) gracefully across every LLM tool entry; (2) `tgSaveOffset`/`tgLoadOffset` in `main.cpp` persists the Telegram offset to LittleFS *before* processing so a crashed message cannot be redelivered forever; (3) overflow-safe `rulesAppend` + 4096→8192 buffers in `rules.cpp`. All three landed in one commit, validated under 11 h sustained load (1 boot-banner in 3,030 turns).
 

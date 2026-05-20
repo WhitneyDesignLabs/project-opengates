@@ -1,0 +1,23 @@
+# wireclaw-agent v1.3 — constitutional LoRA-tuned agent for ESP32-C6
+# Base: meta-llama/Llama-3.1-8B-Instruct + v1.3 LoRA (targeted constitutional repair)
+# SYSTEM: SOUL-CHIP.md (15 articles; remaining 11 internalized via training)
+# Built: <BUILD_DATE>
+# LoRA training: 1,894 examples
+#   - v1.2 base preserved (~590 deduped from wireclaw-v2-train.jsonl)
+#   - clean labeled corpus from 2026-05-18 overnight (~1,044 deduped)
+#   - memory_chain_correct oversampled ×3 (foundation for LED-indirect-ref fix)
+#   - 180 v1.3-synthetic examples (Phase 4.2.1.A) — targeted constitutional repair
+#     spanning log_tampering, deception (incl. roleplay-jailbreak), authorization
+#     (diverse L3/L4 + authed counter-cases), harm (compound + stealth + "for safety"),
+#     truth_uncertainty (calibrated hedging), and refuse_cite cross-cutting
+
+FROM llama3.1:8b
+ADAPTER <PATH_TO_V1.3_LORA_GGUF>
+
+PARAMETER temperature 0.5
+PARAMETER num_ctx 12288
+PARAMETER stop <|eot_id|>
+
+SYSTEM """
+<SOUL_CHIP_INLINE>
+"""

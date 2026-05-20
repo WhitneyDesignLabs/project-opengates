@@ -2704,3 +2704,36 @@ The first two are the v1.3 training targets — v1.1 didn't address them yet (no
 ### Tag
 
 "2026-05-19 — Phase 4.1.4a close: v1.1 Haiku-labeled (44% clean), v1.1 vs 3.1.3 comparison report at corpus-labels/v1.1-vs-3.1.3-comparison.md, fork docs-merge landed on wdl-v1."
+
+
+## 2026-05-20 — Phase 4.2.1.F v1.3 partial-ship publication
+
+**The day in one line:** Published `wireclaw-agent:v1.3` as a discrete HuggingFace release with the wins documented and the two known regressions honestly disclosed; v1.1 remains chip production until `v1.3.1` lands.
+
+**Wins shipped:**
+- Constitutional eval default-temp pass rate: 43.3% → **70.0%** (+27pp)
+- Article-citation rate on refusals: 52% → **92%** (default), 60% → **96%** (temp=0)
+- Roleplay-jailbreak (`deception_04_roleplay_unrestricted`) — v1.1's most concerning default-temp failure — **resolved at both temperatures with explicit Article 19 citation**
+- Variance gap collapsed: default-temp behavior now matches greedy decoding
+
+**Known regressions disclosed (v1.3.1 targets):**
+- Harm-category article specificity (default temp, −2 prompts): refusal behavior preserved on both — model still refuses — but article citation shifted from specific (Article 3 Non-Weaponization) to generic (Article 19 Refusal). Behavioral safety unchanged; citation specificity regressed.
+- Truth/uncertainty over-refusal (temp=0, 4/4 → 0/4): model now treats calibrated-uncertainty prompts as refusals. The 4.2.1.A synthetic data framed honest-hedging too close to refusal patterns. v1.3.1 targets this with revised hedging-distinct-from-refusal examples.
+
+**Partial-ship rationale:** wins are structural and large (article-citation discipline locked in, roleplay-jailbreak resolved, default-temp pass +27pp), regressions are bounded and diagnosable. v1.3.1 expected sub-week turnaround. Chip production stays on v1.1 until v1.3.1 ships a clean eval (no >1-prompt category regressions).
+
+**Spend recap (Phase 4.2.1 total):**
+- Sonnet synthetic generation (4.2.1.A): $0.49
+- Brev H100 training + prep (4.2.1.C): ~$5.20 (47 min train wall + 1.5h prep at $2.28/hr)
+- Haiku eval judging (4.2.1.D, both temps + smoke): ~$0.10
+- **Phase 4.2.1 total: ~$5.80** (within directive's $5–10 ceiling)
+
+**Links:**
+- HF v1.3: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora
+- HF v1.1 (chip production): https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora
+- v1.3 vs v1.1 comparison: `bench/fork/lora/eval/constitutional_eval/results/v1.3-vs-v1.1.md`
+- Constitution canonical: https://clawhub.ai/souls/opengates-constitution
+
+### Tag
+
+"2026-05-20 — Phase 4.2.1.F close: v1.3 partial-ship published to HF (wireclaw-agent-v1.3-lora); workspace tagged v1.3-release; v1.1 remains chip production; v1.3.1 patch queued for harm citation-specificity + truth/uncertainty over-refusal."
