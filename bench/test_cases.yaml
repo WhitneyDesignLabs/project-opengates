@@ -1,0 +1,297 @@
+# WireClaw tool-calling test suite.
+#
+# Each case defines:
+#   id: short stable identifier
+#   prompt: user message to send
+#   pre_messages: (optional) prior conversation context to inject as messages
+#                 before the prompt. Used for memory-recall tests.
+#   expected_tools: list of tool names that MUST appear in tool_calls,
+#                   in any order unless ordered: true.
+#   expected_args: per-tool argument checkers. See classify.py for checker types.
+#                  Supported: exact, contains, contains_any, regex, in_range,
+#                  one_of, present, integer_range.
+#   forbidden_tools: list of tool names that must NOT appear (for direct-vs-rule tests)
+#   mode_focus: A|B|C|D|none -- which failure mode this primarily probes
+#   description: human-readable purpose
+#
+# Notes on the design:
+#   - Tests are deliberately phrased the way a normal user would speak,
+#     not the way the system prompt phrases things.
+#   - Mode B tests use long string values (subjects, paths, message templates)
+#     that an 8B model is tempted to truncate.
+#   - Direct-vs-rule discrimination tests (T13/T14) probe whether the model
+#     can resist the "every action becomes a rule" failure pattern.
+#   - No streaming test here -- we send stream=false. Streaming behavior
+#     is tested separately in run.py with a --probe-streaming flag.
+
+cases:
+  # ===========================================================================
+  # Tier 1: baseline single-tool competence
+  # ===========================================================================
+  - id: T01_led_red
+    prompt: "Set the LED to red."
+    expected_tools: [led_set]
+    expected_args:
+      led_set:
+        r: {exact: 255}
+        g: {exact: 0}
+        b: {exact: 0}
+    forbidden_tools: [rule_create, chain_create]
+    mode_focus: none
+    description: "Trivial primary-color LED set. Direct action, not a rule."
+
+  - id: T02_led_off
+    prompt: "Turn off the LED."
+    expected_tools: [led_set]
+    expected_args:
+      led_set:
+        r: {exact: 0}
+        g: {exact: 0}
+        b: {exact: 0}
+    mode_focus: none
+    description: "LED off = all-zero RGB."
+
+  - id: T03_gpio_on
+    prompt: "Turn on GPIO 10."
+    expected_tools: [gpio_write]
+    expected_args:
+      gpio_write:
+        pin: {exact: 10}
+        value: {exact: 1}
+    mode_focus: none
+    description: "Direct GPIO write, integer arg."
+
+  - id: T04_chip_temp
+    prompt: "What is the chip temperature?"
+    expected_tools: [temperature_read]
+    mode_focus: none
+    description: "Zero-arg tool call. Tests whether model picks the obvious tool."
+
+  - id: T05_device_list
+    prompt: "Show me the list of registered devices."
+    expected_tools: [device_list]
+    mode_focus: none
+    description: "Zero-arg query tool."
+
+  # ===========================================================================
+  # Tier 2: Mode B -- argument-string preservation
+  # The Special-Agent-Puddy era finding: qwen3:8b emits 'gpio.sh led on' instead
+  # of the full path '/home/scott/.openclaw/.../gpio.sh led on'. These tests
+  # use long string arguments where truncation is detectable.
+  # ===========================================================================
+  - id: T06_nats_sensor_long_subject
+    prompt: "Register a NATS sensor on subject home.kitchen.temperature called kitchen_temp with unit C."
+    expected_tools: [device_register]
+    expected_args:
+      device_register:
+        name: {exact: kitchen_temp}
+        type: {exact: nats_value}
+        subject: {exact: home.kitchen.temperature}
+        unit: {exact: C}
+    mode_focus: B
+    description: "Subject must be preserved verbatim with all three dots. Mode B trap."
+
+  - id: T07_file_write_long_content
+    prompt: "Remember that my Tailscale node name is azza.tail63f48.ts.net and my workshop is in the basement."
+    expected_tools: [file_write]
+    expected_args:
+      file_write:
+        path: {exact: /memory.txt}
+        content: {contains_all: [azza.tail63f48.ts.net, workshop, basement]}
+    mode_focus: B
+    description: "Memory note with specific multi-word details. Model must include all three facts."
+
+  - id: T08_telegram_template_string
+    prompt: "Send me a Telegram when chip_temp goes above 28 degrees, with the message 'Chip overheating: {value} degrees C'."
+    expected_tools: [rule_create]
+    expected_args:
+      rule_create:
+        sensor_name: {exact: chip_temp}
+        condition: {exact: gt}
+        threshold: {exact: 28}
+        on_action: {exact: telegram}
+        on_telegram_message: {contains_all: ["Chip overheating", "{value}"]}
+    mode_focus: B
+    description: "Telegram message template must preserve the {value} interpolation token AND the literal text."
+
+  - id: T09_relay_register_and_use
+    prompt: "Register a relay called workshop_fan on GPIO pin 5, then turn it on."
+    expected_tools: [device_register, actuator_set]
+    expected_args:
+      device_register:
+        name: {exact: workshop_fan}
+        type: {exact: relay}
+        pin: {exact: 5}
+      actuator_set:
+        name: {exact: workshop_fan}
+        value: {exact: 1}
+    mode_focus: B
+    description: "Two-step plan. Name must match across both calls."
+
+  # ===========================================================================
+  # Tier 3: rule_create complexity
+  # rule_create has ~30 fields. Tests whether models can navigate it correctly.
+  # ===========================================================================
+  - id: T10_rule_simple_telegram
+    prompt: "Alert me on Telegram when GPIO 2 sensor 'knob' goes above 2000."
+    expected_tools: [rule_create]
+    expected_args:
+      rule_create:
+        sensor_name: {exact: knob}
+        condition: {exact: gt}
+        threshold: {exact: 2000}
+        on_action: {exact: telegram}
+        on_telegram_message: {present: true}
+    mode_focus: none
+    description: "Basic rule_create. Many fields available; should pick the right ones."
+
+  - id: T11_rule_periodic
+    prompt: "Send me a Telegram every 2 minutes with the chip temperature."
+    expected_tools: [rule_create]
+    expected_args:
+      rule_create:
+        sensor_name: {exact: chip_temp}
+        condition: {exact: always}
+        interval_seconds: {exact: 120}
+        on_action: {exact: telegram}
+    mode_focus: none
+    description: "Periodic rule using condition=always + interval_seconds. Requires reading 'every N minutes' as 'always with interval'."
+
+  - id: T12_rule_time_based
+    prompt: "Send me a Telegram at 10:12 with the chip temperature."
+    expected_tools: [rule_create]
+    expected_args:
+      rule_create:
+        sensor_name: {exact: clock_hhmm}
+        condition: {exact: eq}
+        threshold: {exact: 1012}
+        on_action: {exact: telegram}
+    mode_focus: D
+    description: "Time-based rule. Requires knowledge of clock_hhmm encoding. This guidance is in the prompt section that the 4095-char truncation drops -- so this test will likely fail on truncated prompt."
+
+  # ===========================================================================
+  # Tier 4: direct vs rule discrimination
+  # System prompt explicitly says: for direct requests use direct tool, not rule.
+  # ===========================================================================
+  - id: T13_direct_not_rule
+    prompt: "Set the LED to green."
+    expected_tools: [led_set]
+    expected_args:
+      led_set:
+        g: {integer_range: [128, 255]}
+        r: {integer_range: [0, 60]}
+        b: {integer_range: [0, 60]}
+    forbidden_tools: [rule_create, chain_create]
+    mode_focus: none
+    description: "Direct request must use led_set, not wrap it in a rule. Color tolerance: clearly-green RGB."
+
+  - id: T14_rule_for_condition
+    prompt: "Whenever the temperature exceeds 30, set the LED to red."
+    expected_tools: [rule_create]
+    expected_args:
+      rule_create:
+        sensor_name: {exact: chip_temp}
+        condition: {exact: gt}
+        threshold: {exact: 30}
+        on_action: {exact: led_set}
+        on_r: {exact: 255}
+    forbidden_tools: [led_set]
+    mode_focus: none
+    description: "Conditional/automation phrasing must use rule_create, not direct led_set."
+
+  # ===========================================================================
+  # Tier 5: memory + recall
+  # ===========================================================================
+  - id: T15_memory_save
+    prompt: "Remember that my favorite color is blue."
+    expected_tools: [file_write]
+    expected_args:
+      file_write:
+        path: {exact: /memory.txt}
+        content: {contains_any: [blue, favorite]}
+    mode_focus: none
+    description: "Save preference to memory file."
+
+  - id: T16_memory_recall
+    prompt: "Set the LED to my favorite color."
+    pre_messages:
+      - role: system
+        content: "User notes:\nfavorite color: blue"
+    expected_tools: [led_set]
+    expected_args:
+      led_set:
+        b: {integer_range: [128, 255]}
+        r: {integer_range: [0, 60]}
+        g: {integer_range: [0, 60]}
+    mode_focus: none
+    description: "Recall preference from prior context and apply. Tests memory injection path."
+
+  # ===========================================================================
+  # Tier 6: external sensors
+  # ===========================================================================
+  - id: T17_register_analog_sensor
+    prompt: "Register an analog input sensor on GPIO 2 called knob."
+    expected_tools: [device_register]
+    expected_args:
+      device_register:
+        name: {exact: knob}
+        type: {exact: analog_in}
+        pin: {exact: 2}
+    mode_focus: none
+    description: "Basic device registration with pin assignment."
+
+  - id: T18_read_named_sensor
+    prompt: "What does the knob sensor read?"
+    expected_tools: [sensor_read]
+    expected_args:
+      sensor_read:
+        name: {exact: knob}
+    mode_focus: none
+    description: "Read by name. Should pick sensor_read, not gpio_read."
+
+  - id: T19_serial_send
+    prompt: "Send GET_TEMP to the Arduino over serial."
+    expected_tools: [serial_send]
+    expected_args:
+      serial_send:
+        text: {exact: GET_TEMP}
+    mode_focus: B
+    description: "Verbatim command string preservation."
+
+  # ===========================================================================
+  # Tier 7: bulk operations and rule lifecycle
+  # ===========================================================================
+  - id: T20_rule_delete_all
+    prompt: "Delete all rules."
+    expected_tools: [rule_delete]
+    expected_args:
+      rule_delete:
+        rule_id: {exact: "all"}
+    mode_focus: none
+    description: "Special-case rule_id='all'. Tests model reading the description."
+
+  - id: T21_chain_create
+    prompt: "When the chip temp exceeds 30, send me a Telegram, then 5 seconds later set the LED red, then 10 seconds after that turn the LED off."
+    expected_tools: [chain_create]
+    expected_args:
+      chain_create:
+        sensor_name: {exact: chip_temp}
+        condition: {exact: gt}
+        threshold: {exact: 30}
+        step1_action: {exact: telegram}
+        step2_action: {exact: led_set}
+        step2_delay: {exact: 5}
+        step3_action: {exact: led_set}
+        step3_delay: {exact: 10}
+    mode_focus: D
+    description: "Multi-step chain. The chain_create guidance is in the prompt section dropped by 4095 truncation -- expected to fail badly on stock firmware prompt."
+
+  # ===========================================================================
+  # Tier 8: negative / no-tool cases
+  # ===========================================================================
+  - id: T22_off_domain_query
+    prompt: "What is the capital of France?"
+    expected_tools: []
+    forbidden_tools: [led_set, gpio_write, rule_create, file_write, file_read, device_register, sensor_read, temperature_read, nats_publish]
+    mode_focus: none
+    description: "Off-domain question. Model should answer conversationally without inventing a tool call."

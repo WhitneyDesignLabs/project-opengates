@@ -1,0 +1,4 @@
+requests>=2.31.0
+PyYAML>=6.0.1
+anthropic>=0.39.0  # Haiku judge in wrap_up_classify.py (Phase 3.0)
+telethon>=1.36.0   # synthetic-user driver in fork/lora/persona_runner.py (Phase 3.1.1; install on EvoBot)

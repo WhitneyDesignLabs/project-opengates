@@ -1,0 +1,27 @@
+# wireclaw-v2 LoRA training — Brev cloud config (v1.2 data patch)
+base_model: meta-llama/Llama-3.1-8B-Instruct
+train_file: /home/ubuntu/bench/fork/lora/training-data/wireclaw-v2-train.jsonl
+val_file: /home/ubuntu/bench/fork/lora/training-data/wireclaw-v2-val.jsonl
+output_dir: /home/ubuntu/bench/fork/lora/training/output/wireclaw-v2-brev
+seed: 42
+
+# Model precision and attention
+compute_dtype: bfloat16
+attn_impl: sdpa  # v1.1 Brev run used sdpa (per 3.3.1c directive); FA2 not relied on
+
+# LoRA
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+# Training
+epochs: 3
+batch_size: 8
+grad_accum: 1
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+max_seq_length: 3072  # SOUL-LOCAL ~1457 + user + assistant + buffer
+logging_steps: 10

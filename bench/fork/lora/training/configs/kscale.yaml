@@ -1,0 +1,27 @@
+# wireclaw-v1 LoRA training — k-scale-trainer config (Pascal sm_61)
+# This config is the fallback path if/when local training becomes
+# preferable. Brev is the v1 path.
+base_model: meta-llama/Llama-3.1-8B-Instruct
+train_file: bench/fork/lora/training-data/wireclaw-v1-train.jsonl
+val_file: bench/fork/lora/training-data/wireclaw-v1-val.jsonl
+output_dir: bench/fork/lora/training/output/wireclaw-v1-kscale
+seed: 42
+
+# Pascal does NOT support bf16 or FlashAttention 2
+compute_dtype: float16
+attn_impl: sdpa  # no FA2 on Pascal
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+epochs: 3
+batch_size: 1
+grad_accum: 16  # effective batch_size 16 to compensate
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+max_seq_length: 2048  # tighter to fit 8GB VRAM
+logging_steps: 10

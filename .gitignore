@@ -61,3 +61,10 @@ bench/fork/lora/hf-publish/*.tar.gz
 # -- top-level ephemera --
 /esp-web-tools-logs.txt
 /RackPSU-Rig/
+
+# -- large SD card images --
+*.img
+
+# -- bench run outputs (not code) --
+/bench/results/
+*.testmarker

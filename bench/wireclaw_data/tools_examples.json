@@ -1,0 +1,673 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "led_set",
+      "description": "Set RGB LED 0-255 Ex: 'set LED red' -> r=255,g=0,b=0. 'LED blue' -> r=0,g=0,b=255. 'turn off LED' -> r=0,g=0,b=0.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "r": {
+            "type": "integer"
+          },
+          "g": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "r",
+          "g",
+          "b"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "gpio_write",
+      "description": "Set GPIO pin HIGH/LOW Ex: 'turn on GPIO 10' -> pin=10,value=1. 'pin 4 off' -> pin=4,value=0.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pin",
+          "value"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "gpio_read",
+      "description": "Read GPIO pin state Ex: 'read GPIO 5' -> pin=5. 'what is pin 2?' -> pin=2.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pin"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "device_info",
+      "description": "Get heap, uptime, WiFi, chip info Ex: 'system status' or 'how much memory left?' or 'chip info'.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "file_read",
+      "description": "Read file from filesystem Ex: 'read /memory.txt' -> path='/memory.txt'. 'show notes' -> path='/memory.txt'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "file_write",
+      "description": "Write file to filesystem Ex: 'remember favorite color is blue' -> path='/memory.txt',content='User favorite color: blue'. ALWAYS preserve user-specified strings verbatim.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "nats_publish",
+      "description": "Publish NATS message Ex: 'publish hello to topic test.greet' -> subject='test.greet',payload='hello'. ALWAYS use full subject including dots.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "payload"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "temperature_read",
+      "description": "Read chip temperature (C) Ex: 'chip temperature?' or 'how hot is the chip?' or 'temp reading'.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "device_register",
+      "description": "Register sensor/actuator Ex: 'register pot on GPIO 2 called knob' -> name='knob',type='analog_in',pin=2. 'NATS sensor on home.kitchen.temperature called kitchen' -> name='kitchen',type='nats_value',subject='home.kitchen.temperature'. ALWAYS preserve full subject strings with all dots.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "digital_in",
+              "analog_in",
+              "ntc_10k",
+              "ldr",
+              "nats_value",
+              "serial_text",
+              "digital_out",
+              "relay",
+              "pwm"
+            ],
+            "description": "digital_in: GPIO digital read, analog_in: raw ADC reading, ntc_10k: NTC 10K thermistor (temp in C, set inverted=true if NTC is on the 3.3V side), ldr: light-dependent resistor (light level), nats_value: virtual sensor from NATS subject, serial_text: UART text input, digital_out: GPIO digital write, relay: relay on/off, pwm: PWM output"
+          },
+          "pin": {
+            "type": "integer"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "inverted": {
+            "type": "boolean"
+          },
+          "subject": {
+            "type": "string",
+            "description": "NATS subject (for nats_value)"
+          },
+          "baud": {
+            "type": "integer",
+            "description": "Baud rate for serial_text (default 9600)"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "device_list",
+      "description": "List registered devices Ex: 'list devices' or 'what is registered?' or 'show devices'.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "device_remove",
+      "description": "Remove device by name Ex: 'remove knob' -> name='knob'. 'unregister fan' -> name='fan'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "sensor_read",
+      "description": "Read named sensor value Ex: 'read knob' -> name='knob'. 'what is the temperature?' -> name='chip_temp'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "actuator_set",
+      "description": "Set actuator value Ex: 'turn on fan' -> name='fan',value=1. 'set led_dim to 128' -> name='led_dim',value=128.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "rule_create",
+      "description": "Create automation rule. Use chained condition for chain-only targets. Ex: 'alert when chip_temp > 28' -> rule_name='Temp Alert',sensor_name='chip_temp',condition='gt',threshold=28,on_action='telegram',on_telegram_message='Chip temp: {value} C'. 'every 2 min send temp' -> rule_name='Temp Periodic',sensor_name='chip_temp',condition='always',interval_seconds=120,on_action='telegram',on_telegram_message='Temp: {value} C'. ALWAYS include rule_name. ALWAYS preserve user-specified message templates verbatim.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "rule_name": {
+            "type": "string"
+          },
+          "sensor_name": {
+            "type": "string"
+          },
+          "sensor_pin": {
+            "type": "integer"
+          },
+          "condition": {
+            "type": "string",
+            "description": "gt|lt|eq|neq|change|always|chained"
+          },
+          "threshold": {
+            "type": "integer"
+          },
+          "interval_seconds": {
+            "type": "integer"
+          },
+          "actuator_name": {
+            "type": "string"
+          },
+          "on_action": {
+            "type": "string",
+            "description": "gpio_write|led_set|nats_publish|actuator|telegram|serial_send"
+          },
+          "on_pin": {
+            "type": "integer"
+          },
+          "on_value": {
+            "type": "integer"
+          },
+          "on_r": {
+            "type": "integer"
+          },
+          "on_g": {
+            "type": "integer"
+          },
+          "on_b": {
+            "type": "integer"
+          },
+          "on_nats_subject": {
+            "type": "string"
+          },
+          "on_nats_payload": {
+            "type": "string"
+          },
+          "on_telegram_message": {
+            "type": "string",
+            "description": "Use {value} or {device_name}"
+          },
+          "on_serial_text": {
+            "type": "string",
+            "description": "Text to send via serial_text UART"
+          },
+          "off_action": {
+            "type": "string",
+            "description": "auto|none|gpio_write|led_set|nats_publish|actuator|telegram|serial_send"
+          },
+          "off_pin": {
+            "type": "integer"
+          },
+          "off_value": {
+            "type": "integer"
+          },
+          "off_r": {
+            "type": "integer"
+          },
+          "off_g": {
+            "type": "integer"
+          },
+          "off_b": {
+            "type": "integer"
+          },
+          "off_nats_subject": {
+            "type": "string"
+          },
+          "off_nats_payload": {
+            "type": "string"
+          },
+          "off_telegram_message": {
+            "type": "string"
+          },
+          "off_serial_text": {
+            "type": "string",
+            "description": "Text for serial off-action"
+          },
+          "chain_rule": {
+            "type": "string",
+            "description": "Rule ID to trigger after ON action (e.g. rule_01)"
+          },
+          "chain_delay_seconds": {
+            "type": "integer",
+            "description": "Delay before ON chain fires (0=immediate)"
+          },
+          "chain_off_rule": {
+            "type": "string",
+            "description": "Rule ID to trigger after OFF action"
+          },
+          "chain_off_delay_seconds": {
+            "type": "integer",
+            "description": "Delay before OFF chain fires (0=immediate)"
+          }
+        },
+        "required": [
+          "rule_name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "rule_list",
+      "description": "List all rules Ex: 'list rules' or 'what rules exist?' or 'show rules'.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "rule_delete",
+      "description": "Delete rule by ID (e.g. rule_01), or pass 'all' to delete every rule at once. Ex: 'delete rule 1' -> rule_id='rule_01'. 'delete all rules' -> rule_id='all'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Rule ID or 'all'"
+          }
+        },
+        "required": [
+          "rule_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "rule_enable",
+      "description": "Enable/disable rule Ex: 'disable rule_02' -> rule_id='rule_02',enabled=false. 'enable rule_01' -> rule_id='rule_01',enabled=true.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rule_id",
+          "enabled"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "serial_send",
+      "description": "Send text over serial_text UART Ex: 'send GET_TEMP to the arduino' -> text='GET_TEMP'. 'send hello over serial' -> text='hello'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to send (newline appended)"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remote_chat",
+      "description": "Chat with another WireClaw device via NATS Ex: 'ask wireclaw-02 the temperature' -> device='wireclaw-02',message='What is the temperature?'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "device",
+          "message"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "chain_create",
+      "description": "Create multi-step automation chain (up to 5 steps) in one call. Steps execute in order with delays. Ex: 'when temp > 30: telegram, then LED red after 5s, then LED off after 10s' -> sensor_name='chip_temp',condition='gt',threshold=30,step1_action='telegram',step1_message='Temp: {value}C',step2_action='led_set',step2_delay=5,step2_r=255,step2_g=0,step2_b=0,step3_action='led_set',step3_delay=10,step3_r=0,step3_g=0,step3_b=0.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sensor_name": {
+            "type": "string",
+            "description": "Sensor to monitor"
+          },
+          "condition": {
+            "type": "string",
+            "description": "gt|lt|eq|neq|change|always"
+          },
+          "threshold": {
+            "type": "integer"
+          },
+          "interval_seconds": {
+            "type": "integer"
+          },
+          "step1_action": {
+            "type": "string",
+            "description": "telegram|led_set|gpio_write|nats_publish|actuator|serial_send"
+          },
+          "step1_message": {
+            "type": "string",
+            "description": "For telegram/nats/serial_send"
+          },
+          "step1_r": {
+            "type": "integer"
+          },
+          "step1_g": {
+            "type": "integer"
+          },
+          "step1_b": {
+            "type": "integer"
+          },
+          "step1_pin": {
+            "type": "integer"
+          },
+          "step1_value": {
+            "type": "integer"
+          },
+          "step1_actuator": {
+            "type": "string"
+          },
+          "step1_nats_subject": {
+            "type": "string"
+          },
+          "step2_action": {
+            "type": "string",
+            "description": "Action after step1"
+          },
+          "step2_delay": {
+            "type": "integer",
+            "description": "Seconds before step2"
+          },
+          "step2_message": {
+            "type": "string"
+          },
+          "step2_r": {
+            "type": "integer"
+          },
+          "step2_g": {
+            "type": "integer"
+          },
+          "step2_b": {
+            "type": "integer"
+          },
+          "step2_pin": {
+            "type": "integer"
+          },
+          "step2_value": {
+            "type": "integer"
+          },
+          "step2_actuator": {
+            "type": "string"
+          },
+          "step2_nats_subject": {
+            "type": "string"
+          },
+          "step3_action": {
+            "type": "string",
+            "description": "Step3 (optional)"
+          },
+          "step3_delay": {
+            "type": "integer",
+            "description": "Seconds before step3"
+          },
+          "step3_message": {
+            "type": "string"
+          },
+          "step3_r": {
+            "type": "integer"
+          },
+          "step3_g": {
+            "type": "integer"
+          },
+          "step3_b": {
+            "type": "integer"
+          },
+          "step3_pin": {
+            "type": "integer"
+          },
+          "step3_value": {
+            "type": "integer"
+          },
+          "step3_actuator": {
+            "type": "string"
+          },
+          "step3_nats_subject": {
+            "type": "string"
+          },
+          "step4_action": {
+            "type": "string",
+            "description": "Step4 (optional)"
+          },
+          "step4_delay": {
+            "type": "integer",
+            "description": "Seconds before step4"
+          },
+          "step4_message": {
+            "type": "string"
+          },
+          "step4_r": {
+            "type": "integer"
+          },
+          "step4_g": {
+            "type": "integer"
+          },
+          "step4_b": {
+            "type": "integer"
+          },
+          "step4_pin": {
+            "type": "integer"
+          },
+          "step4_value": {
+            "type": "integer"
+          },
+          "step4_actuator": {
+            "type": "string"
+          },
+          "step4_nats_subject": {
+            "type": "string"
+          },
+          "step5_action": {
+            "type": "string",
+            "description": "Step5 (optional)"
+          },
+          "step5_delay": {
+            "type": "integer",
+            "description": "Seconds before step5"
+          },
+          "step5_message": {
+            "type": "string"
+          },
+          "step5_r": {
+            "type": "integer"
+          },
+          "step5_g": {
+            "type": "integer"
+          },
+          "step5_b": {
+            "type": "integer"
+          },
+          "step5_pin": {
+            "type": "integer"
+          },
+          "step5_value": {
+            "type": "integer"
+          },
+          "step5_actuator": {
+            "type": "string"
+          },
+          "step5_nats_subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sensor_name",
+          "condition",
+          "threshold",
+          "step1_action",
+          "step2_action"
+        ]
+      }
+    }
+  }
+]
