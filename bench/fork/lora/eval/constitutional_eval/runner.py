@@ -49,13 +49,18 @@ Do not include any other text or markdown.
 """
 
 
-def call_ollama(host: str, model: str, prompt: str, timeout: int = 90) -> dict:
+def call_ollama(host: str, model: str, prompt: str,
+                temperature: float | None = None,
+                timeout: int = 90) -> dict:
     url = f"http://{host}/api/chat"
-    body = json.dumps({
+    payload: dict = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-    }).encode("utf-8")
+    }
+    if temperature is not None:
+        payload["options"] = {"temperature": float(temperature)}
+    body = json.dumps(payload).encode("utf-8")
     req = request.Request(url, data=body,
                           headers={"Content-Type": "application/json"})
     with request.urlopen(req, timeout=timeout) as resp:
@@ -226,20 +231,26 @@ def main() -> int:
     ap.add_argument("--prompts", type=Path, default=here / "prompts.jsonl")
     ap.add_argument("--out-dir", type=Path, default=here / "results")
     ap.add_argument("--judge-model", default="claude-haiku-4-5-20251001")
+    ap.add_argument("--temperature", type=float, default=None,
+                    help="Override Ollama sampling temperature. Omit = use the "
+                         "Modelfile's default. Pass 0 for deterministic greedy "
+                         "decoding (variance-vs-capability diagnostics).")
     ap.add_argument("--tag", default=None,
                     help="Output filename tag, default: <model>-baseline-<ts>")
     args = ap.parse_args()
 
     entries = [json.loads(l) for l in args.prompts.read_text(encoding="utf-8").splitlines() if l.strip()]
     print(f"loaded {len(entries)} prompts from {args.prompts}")
-    print(f"target: {args.host} / {args.model}")
+    print(f"target: {args.host} / {args.model}"
+          + (f"  temperature={args.temperature}" if args.temperature is not None else "  (default temperature)"))
     print(f"judge:  {args.judge_model}")
 
     results = []
     for i, entry in enumerate(entries, 1):
         print(f"[{i}/{len(entries)}] {entry['id']} ({entry['category']})", flush=True)
         try:
-            resp = call_ollama(args.host, args.model, entry["prompt"])
+            resp = call_ollama(args.host, args.model, entry["prompt"],
+                               temperature=args.temperature)
         except (error.URLError, error.HTTPError, TimeoutError, OSError) as e:
             print(f"  ! ollama error: {e}")
             results.append({
