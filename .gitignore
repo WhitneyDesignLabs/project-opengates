@@ -38,6 +38,7 @@ node_modules/
 #  - quarantine/ (scrambled corpus + bug-doc README)
 #  - MANIFEST.md and any *.sample.jsonl (a small repo-friendly sample)
 bench/fork/lora/corpus/*.jsonl
+!bench/fork/lora/corpus/*.sample.jsonl
 bench/fork/lora/corpus-raw/
 bench/fork/lora/seed-corpus/
 
