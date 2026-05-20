@@ -111,17 +111,45 @@ Sign as Scott Whitney. Report commit hash. **Do NOT push yet** — push is Step 
 
 ---
 
-## Step 4 — Push to origin (gated on Scott confirmation)
+## UPDATE (2026-05-19 mid-day) — Scott's responses to Step 4 / Step 7 prep
 
-After Step 3 commit lands, report the commit hash + remote URL to Scott in chat output and pause. Push only after Scott explicitly confirms (workspace push is L2 within directive scope but worth surfacing because this is the *first* push to the new public-ish repo — Scott may want to review the staged files list one more time before it goes public).
+**Architecture clarification.** `WhitneyDesignLabs/WireClaw` on GitHub is the **firmware fork** (`C:\Users\homet\Documents\WireClaw-fork\`), already populated with commit `bf80fa9` and earlier work. The **Cowork workspace** (`C:\Users\homet\Documents\WireClaw\`, where you're working now) is a SEPARATE artifact and needs ITS OWN GitHub repo — it has not been pushed anywhere yet.
 
-When confirmed:
+**Recommended workspace repo name: `WhitneyDesignLabs/project-opengates` or `WhitneyDesignLabs/wireclaw-agent`.** Scott will confirm the final name + create the empty repo in browser, then provide the URL. Do NOT push to `WhitneyDesignLabs/WireClaw` — that would pollute the firmware fork with non-firmware content and complicate future upstream PRs to Mario.
+
+**CRLF cleanup on WireClaw-fork: APPROVED.** Run `git checkout --` + drop `.gitattributes`. L1 hygiene.
+
+**Step 3.5 follow-up commit: APPROVED.** Before push, add a second commit covering the project-code files Code flagged as "untracked by design":
+- `bench/` (the full benchmarking harness)
+- `bench/fork/lora/aggregate_overnight.py`
+- `bench/fork/lora/ollama_logging_proxy.py`
+- `bench/fork/lora/tg_auth_bootstrap.py`
+- `bench/fork/lora/train.py`
+- `bench/fork/lora/training/configs/`
+- Any other Python / shell tooling that runs the project
+
+EXCLUDE from this follow-up commit:
+- `bench/fork/lora/training-data/*.jsonl` (goes to HF datasets repo separately)
+- SD card images (too large, regenerable)
+- Anything still ignored by `.gitignore`
+
+Secrets-grep again on this follow-up. Commit message: "phase 4.1.2 follow-up: add project tooling code (bench harness, lora training pipeline, proxy, helpers)". Sign as Scott.
+
+**HuggingFace setup: Scott confirmed already done.** Account exists, Llama 3.1 license accepted, HF setup historic (predates this session's note-taking). No new browser actions needed. Scott will provide the HF account/org name and confirm the publish repo name when Code reaches Step 7.
+
+## Step 4 — Push to origin (gated on Scott providing remote URL)
+
+After Step 3.5 follow-up commit lands, Scott will create the empty workspace repo at `https://github.com/WhitneyDesignLabs/<name>` (no README, no .gitignore, no license — empty init so no merge conflict with the local repo's existing files). Scott will paste the URL into chat.
+
+Code's next action when URL arrives:
 
 ```bash
-cd /mnt/c/Users/homet/Documents/WireClaw && git push -u origin main
+cd /mnt/c/Users/homet/Documents/WireClaw
+git remote add origin <url-from-Scott>
+git push -u origin main
 ```
 
-Or whatever branch Scott set up. Report success.
+Report success. First public push of the workspace.
 
 ---
 

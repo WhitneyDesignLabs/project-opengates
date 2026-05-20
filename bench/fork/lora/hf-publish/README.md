@@ -130,7 +130,7 @@ base = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
 )
 tok = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
-model = PeftModel.from_pretrained(base, "<YOUR-HF-USER>/wireclaw-agent-v1.1-lora")
+model = PeftModel.from_pretrained(base, "WhitneyDesignLabs/wireclaw-agent-v1.1-lora")
 
 # System prompt is SOUL-LOCAL.md / SOUL-CHIP.md (see Project Opengates repo).
 msgs = [
@@ -159,7 +159,7 @@ The constitutional framework (`SOUL.md`) and the WireClaw firmware (`WhitneyDesi
   title  = {WireClaw Agent v1.1 — LoRA adapter for Llama 3.1 8B Instruct},
   author = {Whitney, Scott and {Project Opengates contributors}},
   year   = {2026},
-  url    = {https://huggingface.co/<YOUR-HF-USER>/wireclaw-agent-v1.1-lora},
+  url    = {https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora},
   note   = {Constitutionally-bounded embedded AI agent for ESP32-C6.}
 }
 ```
