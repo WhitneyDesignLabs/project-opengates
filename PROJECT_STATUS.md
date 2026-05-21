@@ -1,6 +1,6 @@
 # WireClaw / ESP32-C6 — Project Status
 
-**Last updated:** 2026-05-20 late afternoon (Phase 4.2.1.G — v1.3.1 patch shipped + first chip-side model promotion in project history)
+**Last updated:** 2026-05-20 evening (Phase 4.2.1.G + Phase 4.0.5-lite — v1.3.1 patch shipped, full 3-chip fleet on v1.3.1, c6-01 revived from boot loop)
 
 ## Current state pointer (read this first if you are a fresh session)
 
@@ -25,7 +25,7 @@
 **Fleet:**
 - **c6-02** (`192.168.1.15`, paired with pi02 `.17`) — PRODUCTION on **`wireclaw-agent:v1.3.1`**. `bf80fa9` firmware, full 7-persona rotation under capture.
 - **c6-03** (`192.168.1.47`, paired with pi03 `.44`) — PRODUCTION on **`wireclaw-agent:v1.3.1`**. `bf80fa9`, same.
-- **c6-01 / pilot** (`192.168.1.19`) — Phase 4.0.5-lite revival in progress (2026-05-20). Was last powered down 2026-05-19. Bringing back online with the `bf80fa9` firmware + v1.3.1 chip config to enable 3-agent data collection.
+- **c6-01 / pilot** (`192.168.1.19`, paired with evobot pilot Pi `.51`) — PRODUCTION on **`wireclaw-agent:v1.3.1`**. Revived 2026-05-20 via Phase 4.0.5-lite: leftover-rules.json poison boot-loop cleared via HTTP-window hammer; 4-region flash of bf80fa9 (sha `aa531aa2…`) via evobot's `/dev/ttyACM0` native USB-JTAG; model bumped from the ancient `wireclaw-agent:v1` (pre-stable) straight to v1.3.1; `wdl_c6_pilot_bot` (8728…) Telegram backlog drained.
 - **c6-pilot bot (`wdl_c6_pilot_bot`)** — separate Telegram bot, retired. Fleet bots are `wdl_c6_02_bot` and `wdl_c6_03_bot`.
 
 **Workspace:** Lives at `C:\Users\homet\Documents\WireClaw\` on Windows / `/mnt/c/Users/homet/Documents/WireClaw/` in WSL. Project-level protocol artifact at `CLAUDE.md` (three-actor distinction Cowork / Code / Scott, WSL routing rules, L0–L4 authz mapped to SOUL.md Article 15, recurring failure modes consolidated). Constitution at `SOUL.md` (canonical 26 articles); chip-runtime variant at `SOUL-CHIP.md` (fits 4095-byte chip budget); training-time variant at `bench/fork/lora/training-data/constitution/SOUL-LOCAL.md`. State transfer between Cowork and Code is **file-channel only** (`sync/to_code.md`, `sync/from_code.md`, `sync/worklog.md`) — chat is not authoritative.

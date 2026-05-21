@@ -2789,3 +2789,46 @@ The first two are the v1.3 training targets — v1.1 didn't address them yet (no
 ### Tag
 
 "2026-05-20 — Phase 4.2.1.G close: v1.3.1 shipped to HF (wireclaw-agent-v1.3.1-lora); ESP32-C6 fleet (c6-02 + c6-03) promoted v1.1 → v1.3.1 — first chip-side model bump in project history. Harm Art 3/12 specificity recovered to 6/6. Authorization default-temp regression (4/6 → 2/6) documented and accepted at ship; v1.3.2 queued."
+
+
+## 2026-05-20 evening — Phase 4.0.5-lite: c6-01 + evobot revival; first 3-chip uniform-model fleet
+
+**The day in one line:** c6-01 brought back from the deferred state (powered down 2026-05-19 for buggy firmware spam) — boot-loop broken, flashed to `bf80fa9`, promoted v1 → v1.3.1, evobot Pi provisioned for capture. Project now has its first 3-agent fleet (c6-01 + c6-02 + c6-03) all on a uniform `wireclaw-agent:v1.3.1` model.
+
+**c6-01 recovery sequence:**
+- Pre-state: chip booting on old firmware (no pin guard, no tg-offset persist), running ancient `wireclaw-agent:v1` (pre-stable, 6 days old on azza), spamming Telegram per Scott's diagnosis.
+- Step 1 — break boot loop: `/api/rules/delete {"id":"all"}` hammer caught the ~1-2s HTTP-alive window on attempt #22 (same recovery pattern as c6-03 in Phase 4.0.3). Rules now `[]`, uptime climbing monotonically.
+- Step 2 — flash bf80fa9: scp'd 4 binaries (bootloader + partitions + boot_app0 + firmware) to evobot Pi, installed esptool 5.2.0 into phase31-venv, ran `esptool --chip esp32c6 --no-stub --before default-reset --after hard-reset write-flash --flash-size detect` against `/dev/serial/by-id/usb-Espressif_USB_JTAG_serial_debug_unit_E8:F6:0A:FB:E3:C0-if00`. All 4 regions hash-verified, firmware sha `aa531aa237d56ac63a0a3c440297248a22bedc1bcb80492bf9192c819bfb5514` (identical to c6-02 / c6-03's flashed firmware).
+- Step 3 — promote v1 → v1.3.1: same `phase_4_2_1g_promote_chip.sh` used on c6-02 / c6-03. Post-reboot model field flipped, uptime 72s → 140s monotonic, heap 89-135k oscillation, 0 resets in 60s.
+- Step 4 — drain Telegram backlog: `phase_4_0_5_tgnuke01.sh` against `wdl_c6_pilot_bot` (8728314129); `deleteWebhook?drop_pending_updates=true` confirmed pending=0.
+
+**evobot Pi provisioning:**
+- Pi was alive and Tailscale-reachable but never updated past Phase 3.1.x kit (last capture 2026-05-17).
+- Installed esptool into phase31-venv (telethon 1.43.2 + requests 2.34.2 already there).
+- Deployed canonical persona_runner.py (post-4.1.1 FIFO fix) + overnight_capture.sh + 7 pin-safe-remapped personas to `~/wireclaw-phase31/bench/fork/lora/`.
+- overnight_capture.sh is already calibrated for evobot/c6-01: `BOT_USERNAME=wdl_c6_pilot_bot`, `SESSION_FILE=~/.telethon-evobot.session`, `RULE_PURGE_URL=http://192.168.1.19/api/rules/delete`.
+- `.telethon-evobot.session` from 2026-05-17 still present and valid (SQLite 3.x; Telegram sessions typically valid for ~6 months).
+- `~/wireclaw-corpus/user-side/` capture output dir created.
+
+**Final 3-chip fleet state (all on `wireclaw-agent:v1.3.1`):**
+- c6-01 (192.168.1.19, paired with evobot .51) — uptime 4m50s, heap 92.8k
+- c6-02 (192.168.1.15, paired with pi02 .17) — uptime 28m33s, heap 92.9k
+- c6-03 (192.168.1.47, paired with pi03 .44) — uptime 26m03s, heap 89.7k
+
+**Tooling added:**
+- `sdcard-images/phase_4_0_5_clearrules01.sh` — c6-01 rule-clear hammer (parallel to phase_4_0_3_clearrules*.sh for c6-02/03)
+- `sdcard-images/phase_4_0_5_flash01.sh` — evobot-side 4-region flash driver for c6-01
+- `sdcard-images/phase_4_0_5_tgnuke01.sh` — c6-01 Telegram backlog drain (parallel to phase_4_1_1_tgnuke.sh)
+
+**Cost:** $0 (no cloud spend — all local LAN + workstation work).
+
+**Standing-by:** Scott can launch 3-agent capture tonight via:
+- pi02 + c6-02 + wdl_c6_02_bot
+- pi03 + c6-03 + wdl_c6_03_bot
+- evobot + c6-01 + wdl_c6_pilot_bot
+
+Each Pi needs `TG_API_ID` / `TG_API_HASH` / `TG_PHONE` env vars sourced from Secrets.txt at launch time.
+
+### Tag
+
+"2026-05-20 evening — Phase 4.0.5-lite close: c6-01 revived from leftover-rules.json boot loop, flashed bf80fa9, promoted to v1.3.1; evobot Pi provisioned with current persona kit; first 3-chip uniform-model fleet (c6-01 + c6-02 + c6-03 all on wireclaw-agent:v1.3.1)."
