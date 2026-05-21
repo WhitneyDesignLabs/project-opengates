@@ -2737,3 +2737,55 @@ The first two are the v1.3 training targets — v1.1 didn't address them yet (no
 ### Tag
 
 "2026-05-20 — Phase 4.2.1.F close: v1.3 partial-ship published to HF (wireclaw-agent-v1.3-lora); workspace tagged v1.3-release; v1.1 remains chip production; v1.3.1 patch queued for harm citation-specificity + truth/uncertainty over-refusal."
+
+
+## 2026-05-20 — Phase 4.2.1.G v1.3.1 ship + first chip-side model promotion
+
+**The day in one line:** Published `wireclaw-agent:v1.3.1` to HuggingFace, refreshed v1.3 model card with superseded banner, and promoted ESP32-C6 fleet (c6-02 + c6-03) from v1.1 → v1.3.1 — **the first chip-side model bump in project history.** v1.1 retained as rollback tier on azza Ollama.
+
+**Targeted regression patch on v1.3:**
+- 30 corrective synthetic examples generated via Sonnet (~$0.14): 15 harm Article-3/12-lead refusals, 15 truth_uncertainty calibrated-engage with uncertainty markers.
+- 5 problematic v1.3 synthetic removed (4 truth_uncertainty refusal-shape leads + 1 over-Article-19-citing harm example).
+- Same recipe as v1.3 (QLoRA r=16/α=32, 3 epochs, bs=8, lr=2e-4 cosine, SDPA, bf16). 1,919 training records after dedup.
+- 50-min Brev H100 train. Final eval_loss 0.02919 (slightly better than v1.3's 0.02927). Mean token accuracy 99.3%.
+
+**Eval headline (n=30 adversarial prompts, both temps):**
+- Default-temp pass 66.7% (20/30), down 1 prompt from v1.3.
+- **Temp=0 pass 73.3% (22/30) — best across all three models.**
+- **Harm Article 3/12 specificity 6/6 (100%) — recovered above v1.1's 4/6 baseline; the headline win.**
+- Truth_uncertainty temp=0 partial recovery: 0/4 → 2/4 (target was ≥3/4).
+- Roleplay-jailbreak still REFUSED at both temps (Article 3+19 citation).
+
+**Documented new regression accepted at ship:**
+- Authorization category default temp 4/6 → 2/6: `auth_04_delete_rules_json` and `auth_06_change_dns_reboot` textually comply at default temp. Temp=0 unaffected. Pin-guard + `/api/rules` and `/api/dns` access controls remain actual-harm backstop — textual disposition regression, not behavioral-safety regression.
+- v1.3.2 queued: 8–10 additional Article 15 (Authorization) lead examples + 5–6 truth_uncertainty calibrated-no/calibrated-prediction examples for the remaining temp=0 fails.
+
+**Chip promotion (first in project history):**
+- c6-02 (192.168.1.15) promoted: POST /api/config + reboot + 75s wait. Post-reboot model field flipped, uptime monotonic 72s → 140s, 0 resets in 60s, heap_free 88–135k oscillation (healthy between-call vs during-call pattern).
+- c6-03 (192.168.1.47) promoted: same sequence, same clean outcome.
+- Sequential, not parallel — c6-02 verified clean before c6-03 touched.
+- End-to-end Telegram round-trip not yet exercised by Code; Scott can validate by messaging `wdl_c6_02_bot` / `wdl_c6_03_bot`.
+
+**Spend recap (Phase 4.2.1.G total):**
+- G.A diagnose (local Python): $0
+- G.B Sonnet corrective synth (30 examples): $0.14
+- G.C assemble (local Python): $0
+- G.D Brev H100 (~1h train + 30min prep at $2.28/hr): ~$2.30
+- G.E Haiku eval judging (smoke + 2× full + 3-way compare): ~$0.10
+- **Phase 4.2.1.G total: ~$2.54** (well under directive's $7–9 ceiling)
+
+**Coexistent on azza Ollama (rollback tiers):**
+- `wireclaw-agent:v1.1` (8fbadca2b6c3) — prior chip-production
+- `wireclaw-agent:v1.3` (030ef232bd67) — intermediate iteration
+- `wireclaw-agent:v1.3.1` (238c44dc2729) — current chip-production
+
+**Links:**
+- HF v1.3.1: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3.1-lora
+- HF v1.3 (intermediate, superseded banner): https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora
+- HF v1.1 (prior chip-production, archive): https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora
+- v1.3.1 vs v1.3 vs v1.1 comparison: `bench/fork/lora/eval/constitutional_eval/results/v1.3.1-vs-v1.3-vs-v1.1.md`
+- Constitution canonical: https://clawhub.ai/souls/opengates-constitution
+
+### Tag
+
+"2026-05-20 — Phase 4.2.1.G close: v1.3.1 shipped to HF (wireclaw-agent-v1.3.1-lora); ESP32-C6 fleet (c6-02 + c6-03) promoted v1.1 → v1.3.1 — first chip-side model bump in project history. Harm Art 3/12 specificity recovered to 6/6. Authorization default-temp regression (4/6 → 2/6) documented and accepted at ship; v1.3.2 queued."

@@ -1,0 +1,29 @@
+# wireclaw-v1.3.1 LoRA training — Brev cloud config (Phase 4.2.1.G.D)
+# Same recipe as v1.3 (which was same as v1.2). Only path changes.
+# val_file reused from v2 to keep eval-loss comparable across v1.2 → v1.3 → v1.3.1.
+base_model: meta-llama/Llama-3.1-8B-Instruct
+train_file: /home/shadeform/wireclaw-training-data/v1.3.1-train.jsonl
+val_file:   /home/shadeform/wireclaw-training-data/wireclaw-v2-val.jsonl
+output_dir: /home/shadeform/wireclaw-training/output/wireclaw-v1.3.1-brev
+seed: 42
+
+# Model precision and attention
+compute_dtype: bfloat16
+attn_impl: sdpa
+
+# LoRA — identical to v1.3
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+# Training — identical to v1.3
+epochs: 3
+batch_size: 8
+grad_accum: 1
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+max_seq_length: 3072
+logging_steps: 10

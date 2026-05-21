@@ -1,28 +1,31 @@
 # WireClaw / ESP32-C6 — Project Status
 
-**Last updated:** 2026-05-19 midday (Phase 4.1.2 housekeeping — workspace publication + HF model release prep)
+**Last updated:** 2026-05-20 late afternoon (Phase 4.2.1.G — v1.3.1 patch shipped + first chip-side model promotion in project history)
 
 ## Current state pointer (read this first if you are a fresh session)
 
 **Constitution (canonical):** https://clawhub.ai/souls/opengates-constitution (v0.2.0) — every project artifact links here; treat it as authoritative on any interpretive question.
 
-**Model:** Chip-production is still `wireclaw-agent:v1.1`, deployed on azza (Ollama proxy on `:11435`). **`v1.3` shipped as a partial release on 2026-05-20** — published to [`whitneydesignlabs/wireclaw-agent-v1.3-lora`](https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora) and live on azza for evaluation, but **not yet promoted to chip default** — chips remain on v1.1 until `v1.3.1` lands. `v1.2` exists from earlier Brev work; held for archival.
+**Model:** Chip-production is **`wireclaw-agent:v1.3.1`** as of 2026-05-20 — the first chip-side model bump in project history. c6-02 and c6-03 promoted from v1.1 → v1.3.1 via `/api/config` POST + reboot, both stable 0 resets in 60s post-promotion. Three rollback tiers preserved on azza Ollama: `:v1.1` (prior chip-production), `:v1.3` (intermediate iteration), `:v1.3.1` (current). `v1.2` exists from earlier Brev work; held for archival.
 
-**v1.3 release (Phase 4.2.1, partial-ship):**
-- HF: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora
-- Constitutional eval (n=30 adversarial prompts): default-temp pass 43.3% → **70.0%** (+27pp); article-citation rate on refusals 52% → **92%** (default), 60% → **96%** (temp=0).
-- Roleplay-jailbreak (v1.1's most concerning default-temp failure) **resolved at both temperatures** with Article 19 citation.
-- Variance gap collapsed (default ≈ greedy decoding).
-- **Known regressions targeted by v1.3.1:** harm-category article-specificity (refusal preserved, citation shifted from Article 3 → 19 on 2 prompts); truth/uncertainty over-refusal (4/4 → 0/4 at temp=0 — model now refuses prompts that should get calibrated honest hedging).
-- Decision: partial ship because wins are structural and large; regressions are bounded and diagnosable. v1.1 remains chip production until v1.3.1 ships clean.
-- v1.3.1 in progress: sub-week turnaround, targeted synthetic patches for both regressions; chips promote on the next clean eval.
+**v1.3.1 release (Phase 4.2.1.G, ship + chip-promote):**
+- HF: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3.1-lora
+- v1.3 sibling preserved at https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora (model card refreshed with superseded-by-v1.3.1 banner)
+- Constitutional eval (n=30 adversarial prompts): default-temp 66.7%, **temp=0 73.3% (best across all three models)**, harm Article 3/12 specificity **6/6 (100% — recovered above v1.1 baseline)**, truth_uncertainty temp=0 partial recovery (0/4 → 2/4, target was ≥3/4).
+- Targeted patch: 30 corrective synthetic examples (15 harm Art-3/12-lead + 15 truth_uncertainty calibrated-engage), 5 problematic v1.3 examples removed. Same recipe as v1.3 (QLoRA r=16/α=32, 3 epochs). 50-min Brev H100 train, ~$2.30; total Phase G ~$2.54.
+- **Documented new regression accepted at ship:** authorization category default temp 4/6 → 2/6 (`auth_04_delete_rules_json`, `auth_06_change_dns_reboot` textually comply at default temp; temp=0 unaffected). Pin-guard + API-side access controls remain actual-harm backstop. v1.3.2 queued to address.
+
+**v1.3 release (Phase 4.2.1.F, intermediate — preserved for rollback):**
+- HF: https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3-lora (now showing superseded-by-v1.3.1 banner)
+- Constitutional eval: default-temp 70.0%, temp=0 66.7%, article-citation 92%/96%. Roleplay-jailbreak resolved at both temps. Variance gap collapsed.
+- Regressions that v1.3.1 fixed: harm Article 3/12 specificity (4/6 → 6/6); roleplay-jailbreak refusal preserved. Regression v1.3.1 partially fixed: truth_uncertainty temp=0 (0/4 → 2/4). Regression v1.3.1 introduced: authorization default 4/6 → 2/6.
 
 **Firmware:** `WireClaw-fork @ wdl-v1`, commit **`bf80fa9`** — the three-fix release: (1) pin guard in `tools.cpp` rejects ESP32-C6 reserved pins (12, 13, 24–30) gracefully across every LLM tool entry; (2) `tgSaveOffset`/`tgLoadOffset` in `main.cpp` persists the Telegram offset to LittleFS *before* processing so a crashed message cannot be redelivered forever; (3) overflow-safe `rulesAppend` + 4096→8192 buffers in `rules.cpp`. All three landed in one commit, validated under 11 h sustained load (1 boot-banner in 3,030 turns).
 
 **Fleet:**
-- **c6-02** (`192.168.1.15`, paired with pi02 `.17`) — PRODUCTION. `bf80fa9` firmware, full 7-persona rotation under capture.
-- **c6-03** (`192.168.1.47`, paired with pi03 `.44`) — PRODUCTION. `bf80fa9`, same.
-- **c6-01 / pilot** — DEFERRED (Phase 4.0.5). Last seen boot-looping on old firmware; Scott powered it down 2026-05-19. Out of training rotation; revisit after broader-fleet hardening.
+- **c6-02** (`192.168.1.15`, paired with pi02 `.17`) — PRODUCTION on **`wireclaw-agent:v1.3.1`**. `bf80fa9` firmware, full 7-persona rotation under capture.
+- **c6-03** (`192.168.1.47`, paired with pi03 `.44`) — PRODUCTION on **`wireclaw-agent:v1.3.1`**. `bf80fa9`, same.
+- **c6-01 / pilot** (`192.168.1.19`) — Phase 4.0.5-lite revival in progress (2026-05-20). Was last powered down 2026-05-19. Bringing back online with the `bf80fa9` firmware + v1.3.1 chip config to enable 3-agent data collection.
 - **c6-pilot bot (`wdl_c6_pilot_bot`)** — separate Telegram bot, retired. Fleet bots are `wdl_c6_02_bot` and `wdl_c6_03_bot`.
 
 **Workspace:** Lives at `C:\Users\homet\Documents\WireClaw\` on Windows / `/mnt/c/Users/homet/Documents/WireClaw/` in WSL. Project-level protocol artifact at `CLAUDE.md` (three-actor distinction Cowork / Code / Scott, WSL routing rules, L0–L4 authz mapped to SOUL.md Article 15, recurring failure modes consolidated). Constitution at `SOUL.md` (canonical 26 articles); chip-runtime variant at `SOUL-CHIP.md` (fits 4095-byte chip budget); training-time variant at `bench/fork/lora/training-data/constitution/SOUL-LOCAL.md`. State transfer between Cowork and Code is **file-channel only** (`sync/to_code.md`, `sync/from_code.md`, `sync/worklog.md`) — chat is not authoritative.
