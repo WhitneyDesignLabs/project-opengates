@@ -1,206 +1,123 @@
 # Instructions for Claude Code
 
-## STATUS: ACTIVE TASK — Phase 4.2.1.G — v1.3.1 targeted regression patch
+## STATUS: ACTIVE — Phase 4.2.1.I (fresh-session pickup, morning of 2026-05-21)
 
-**Context:** Phase 4.2.1.F closed v1.3 as a public release with two known regressions documented. This directive trains v1.3.1, a small patch targeting both regressions while preserving the v1.3 wins, validates against the same eval suite, and on a clean ship gate **also promotes the chip fleet from v1.1 to v1.3.1** (the first chip-side model bump since the project began).
-
-**Wins to preserve from v1.3** (must not regress):
-- Article-citation rate 92%/96%
-- Default-temp pass 70.0%
-- Roleplay-jailbreak (`deception_04`) refusal at both temps
-- Variance collapse (default ≈ greedy)
-
-**Regressions to fix:**
-- Harm category: refusal preserved but citation specificity regressed (Article 19 generic vs Article 3 specific). Behavioral safety OK; citation quality OK to lose marginally if we MUST trade.
-- Truth/uncertainty temp=0: 4/4 → 0/4. Over-refusal on prompts that should receive calibrated answers.
-
-**Budget:** ~$7–9 total (Sonnet ~$1–2 for synthetic, Brev ~$5–7 for training, Haiku ~$0.10 for eval judging). Sub-week wall.
-
-**Sequence (handbacks between):**
-
-- 4.2.1.G.A — Diagnose the v1.3 synthetic examples that caused each regression
-- 4.2.1.G.B — Generate corrective synthetic (~25–35 examples)
-- 4.2.1.G.C — Assemble v1.3.1 training data (replace bad examples + add corrective ones)
-- 4.2.1.G.D — Brev training
-- 4.2.1.G.E — Deploy + validate
-- 4.2.1.G.F — Ship decision gate
-- 4.2.1.G.G — Publication + **chip promotion** (gated separately on Scott's explicit "promote to chips")
+[2026-05-20 18:07 MST: Phase 4.2.1.H complete — 3-chip overnight capture launched (evobot+pi02+pi03 → c6-01+c6-02+c6-03 via wdl_c6_pilot/02/03_bot, full 7-persona rotation, 06:00 MST tomorrow STOP_FLAG watchdog), launch PIDs evobot:8674/8678, pi02:7456/7460, pi03:13880/13884, T+10 liveness PASS with errors=0 across all three. Scott cleared and powered down. See sync/from_code.md top entry.]
 
 ---
 
-## 4.2.1.G.A — Diagnose root-cause synthetic examples
+## PHASE 4.2.1.I — Tomorrow morning fresh-session pickup
 
-Open `bench/fork/lora/training-data/v1.3-synthetic.jsonl`. Identify the examples that likely caused each regression:
+**This phase is for the FRESH Cowork + Code session that boots up when Scott powers his workstation back on tomorrow morning.** Read CLAUDE.md first (the protocol artifact), then this directive.
 
-a. **Harm article-anchor regression.** Look at:
-   - The 40 `refuse_cite` cross-cutting examples — how many cite Article 19 vs how many cite the actual harm-specific articles (3, 12)? Hypothesis: the cross-cutting examples over-fired Article 19 in harm contexts.
-   - The 30 `harm` diversity examples — what's their article-citation distribution? Should be Article 3 (Non-Weaponization) for weapon/violence framings, Article 12 (Safety Hierarchy) for living-being-harm framings. If Article 19 dominates, that's a generation bug we should fix.
-
-b. **Truth/uncertainty over-refusal regression.** Look at:
-   - The 20 `truth_uncertainty` examples — what's their response shape? Are they predominantly "I cannot answer that" (refusal-like) or "Approximately X, with uncertainty Y" (calibrated-answer)? Hypothesis: too many refusal-shaped responses on prompts that should be hedge-shaped.
-
-Report findings to chat. Specifically: count of problematic examples per category, sample 2–3 per regression so Scott can see the pattern.
-
----
-
-## 4.2.1.G.B — Generate corrective synthetic
-
-Based on 4.2.1.G.A findings, generate new examples to correct the gradient. Use Sonnet (not Haiku — same as 4.2.1.A quality reasoning).
-
-**Targets (revisable based on G.A findings):**
-
-a. **~15–20 harm examples re-anchoring on Articles 3 / 12.** Each must:
-   - Use a harm-context prompt (weaponization, violence, harm to living beings)
-   - Refuse, citing Article 3 (Non-Weaponization) for weapon/violence framings OR Article 12 (Safety Hierarchy) for harm-to-living-being framings
-   - **Never use Article 19 alone as the citation** in harm contexts (Article 19 is the general refusal-right article; it should be paired with the specific principle being violated, or skipped if the specific article suffices)
-   - Cover the same prompt-shape diversity as the original 30: direct harm, compound sympathetic framing, silent-stealth framing, "for safety" framing
-
-b. **~10–15 truth/uncertainty examples modeling `hedge-and-engage`.** Each must:
-   - Use a prompt that should receive a calibrated answer (e.g., "what's the chip temperature in an hour?", "how much RAM is in use right now?", "has the chip ever been compromised?")
-   - Respond with an actual calibrated answer + explicit uncertainty markers ("Approximately X, with uncertainty Y because Z", "Based on the last reading at HH:MM, the value was X; current value is likely X±Y", "I have not detected compromise this session, but I cannot verify all attack vectors")
-   - **Do NOT refuse the question.** The training signal should be: when faced with uncertainty, ENGAGE with calibrated-confidence language, do not refuse.
-
-Output: `bench/fork/lora/training-data/v1.3.1-synthetic.jsonl` with 25–35 examples. Same schema as v1.3-synthetic.jsonl.
-
-Surface cost estimate before generating (~$1–2 expected). Sample 3 per category for manual readability check.
-
----
-
-## 4.2.1.G.C — Assemble v1.3.1 training data
-
-Take `v1.3-train.jsonl` as the base. Two operations:
-
-a. **Remove** the harmful v1.3 synthetic examples identified in 4.2.1.G.A (the harm examples that over-cited Article 19, the truth_uncertainty examples that refused instead of engaging). Net removal: probably ~15–25 examples.
-
-b. **Add** the v1.3.1 synthetic from 4.2.1.G.B (25–35 examples).
-
-Net training set size: roughly unchanged from v1.3 (1,894 ± ~20).
-
-Output: `bench/fork/lora/training-data/v1.3.1-train.jsonl` + `v1.3.1-train.manifest.md` documenting:
-- Composition (v1.2 base, clean-labeled, memory-chain oversamples, v1.3.1-synthetic = v1.3-synthetic minus removed + new corrective)
-- Specific v1.3 examples removed (their IDs + the regression they likely caused)
-- New v1.3.1 examples added (their IDs + target principle)
-
----
-
-## 4.2.1.G.D — Brev training
-
-Same recipe as v1.3 (and v1.2 before it):
-- Base: `meta-llama/Llama-3.1-8B-Instruct`
-- LoRA r=16, alpha=32, all-linear targets
-- 3 epochs, batch 8, lr 2e-4, paged_adamw_8bit, bf16, SDPA attention
-- tmux session protection
-
-Same `phase_4_2_1c_brev.sh` driver pattern from the 4.2.1.C run.
-
-**Scott provisions the H100 in Brev web UI per the same walkthrough as last time** (≥100 GB disk, default deep-learning AMI, spot pricing, 1h idle auto-stop). When the instance shows Running, Scott pastes the SSH command to Code. Code runs `all-prep → train → monitor → download` autonomously.
-
-Expected ~5h training + ~$5–7 Brev. Surface progress checkpoints during monitor mode.
-
-After download: GGUF convert + Modelfile build + `ollama create wireclaw-agent:v1.3.1` on azza. Preserve both v1.1 and v1.3 (do NOT `ollama rm`) — three discrete tags coexist as rollback options.
-
-**STOP the Brev instance after download.** Same lesson as v1.3 — don't let it idle-bill.
-
----
-
-## 4.2.1.G.E — Deploy + validate
-
-a. Smoke test (`bench/fork/lora/training/smoke_test.py` against `wireclaw-agent:v1.3.1`). Expect 10/10 or near.
-
-b. Constitutional eval at BOTH temps:
-   ```
-   python runner.py --model wireclaw-agent:v1.3.1 --output results/v1.3.1-default.jsonl
-   python runner.py --model wireclaw-agent:v1.3.1 --temperature 0 --output results/v1.3.1-temp0.jsonl
-   ```
-
-c. Three-way comparison report at `results/v1.3.1-vs-v1.3-vs-v1.1.md`:
-   - Per-category pass rates: v1.1 / v1.3 / v1.3.1, both temps
-   - Article-citation rates: v1.1 / v1.3 / v1.3.1
-   - Specifically: did `harm` category recover its Article 3 / 12 specificity? (Look at WHICH article gets cited in v1.3.1's harm refusals.)
-   - Specifically: did `truth_uncertainty` temp=0 recover to 4/4 (or near)?
-   - Did any v1.3 win regress? (Roleplay-jailbreak, default-temp pass, article-citation overall.)
-
-d. Manual-probe replay against v1.3.1 (the 7-prompt sequence from Scott's 2026-05-20 probe). All should still refuse correctly with appropriate article citations.
-
----
-
-## 4.2.1.G.F — Ship decision gate
-
-Write consolidated handback to `sync/from_code.md` with the comparison report verbatim. STOP for Scott's decision:
-
-**Ship criteria (all must hold):**
-- v1.3.1 ≥ v1.3 on overall pass rate at both temps
-- `harm` category: refusal preserved AND citation specificity ≥ v1.1 (Articles 3/12 dominate over 19 in harm contexts)
-- `truth_uncertainty` temp=0: ≥3/4 (recovers from 0/4 toward v1.1's 4/4)
-- No category regresses by >1 prompt vs v1.3
-- Manual probe still 7/7
-
-**If ship:** Scott authorizes 4.2.1.G.G publication + chip promotion.
-**If partial:** Scott decides whether to ship-with-documented-residue or iterate to v1.3.2.
-**If rollback:** document why, leave v1.1 in chip production, v1.3 as public HF only, plan next.
-
-Do NOT autonomously publish or promote chips. Wait for Scott's word.
-
----
-
-## 4.2.1.G.G — Publication + chip promotion (gated on Scott's "ship" word)
-
-Two distinct gated actions:
-
-**Publication (same shape as 4.2.1.F):**
-- New HF repo `whitneydesignlabs/wireclaw-agent-v1.3.1-lora` (preserves v1.3 as its own artifact)
-- Model card foregrounds the two regressions resolved + the v1.3 wins preserved
-- Workspace commit `phase 4.2.1.G: v1.3.1 regression patch` + tag `v1.3.1-release`
-- PROJECT_STATUS.md updated
-- Worklog appended
-
-**Chip promotion (separately gated — Scott says "promote chips"):**
-
-Each chip's running model is configured via `/api/config` POST. The current value is `wireclaw-agent:v1.1`. Promotion = POST `{"model":"wireclaw-agent:v1.3.1"}` to each chip, then POST `/api/reboot`, then verify via GET `/api/config` + GET `/api/status` that the live model is `wireclaw-agent:v1.3.1` and heap is healthy.
+### I.1 — Verify auto-stop fired and capture is complete
 
 ```bash
-# Per-chip pattern
-curl -X POST http://<chip-ip>/api/config \
-  -H "Content-Type: application/json" \
-  -d '{"model":"wireclaw-agent:v1.3.1"}'
-curl -X POST http://<chip-ip>/api/reboot
-sleep 75
-curl -sS http://<chip-ip>/api/config | jq .model      # expect wireclaw-agent:v1.3.1
-curl -sS http://<chip-ip>/api/status | jq .heap_free  # expect healthy value
+wsl -- bash -lc 'for spec in "evobot:192.168.1.51" "pi02:192.168.1.17" "pi03:192.168.1.44"; do
+  name="${spec%%:*}"; ip="${spec##*:}"
+  echo "=== $name $ip ==="
+  ssh -i ~/.ssh/evobot_ed25519 scott@$ip "
+    pgrep -af overnight_capture.sh | head -1; pgrep -af persona_runner.py | head -1
+    echo ---
+    cat ~/.overnight-capture.status.final 2>/dev/null || cat ~/.overnight-capture.status 2>/dev/null
+    echo ---
+    ls -la ~/STOP_FLAG 2>/dev/null
+  "
+done'
 ```
 
-**Chips:**
-- c6-02: 192.168.1.15
-- c6-03: 192.168.1.47
-- c6-01 (pilot): 192.168.1.19 — DEFERRED (Phase 4.0.5, still powered down per Scott's earlier directive)
+Expected: zero running procs, STOP_FLAG present, `.status.final` showing session count. If anything's still running, pkill cleanly with bracket pattern (`pkill -f '[o]vernight_capture\.sh'`).
 
-Do c6-02 first, verify clean for ~60 seconds (live Telegram traffic shows real model replies not boot banners), THEN c6-03. Sequential, not parallel — if c6-02 wedges we want to find out before touching c6-03.
+### I.2 — Pull corpus from all 3 Pis + azza proxy
 
-After both verified: run a brief liveness check — 3 manual prompts each via the test runner or via direct HTTP to confirm v1.3.1 in production. Report.
+```bash
+wsl -- bash -lc '
+DEST=/mnt/c/Users/homet/Documents/WireClaw/corpus/raw/2026-05-21
+mkdir -p "$DEST/evobot" "$DEST/pi02" "$DEST/pi03"
+scp -i ~/.ssh/evobot_ed25519 scott@192.168.1.51:~/wireclaw-corpus/user-side/*.jsonl "$DEST/evobot/"
+scp -i ~/.ssh/evobot_ed25519 scott@192.168.1.17:~/wireclaw-corpus/user-side/*.jsonl "$DEST/pi02/"
+scp -i ~/.ssh/evobot_ed25519 scott@192.168.1.44:~/wireclaw-corpus/user-side/*.jsonl "$DEST/pi03/"
+ls -la "$DEST"/*/
+'
+ssh azza@azza.tail63f48.ts.net "ls -la ~/wireclaw-corpus/ollama-raw/2026-05-20/ ~/wireclaw-corpus/ollama-raw/2026-05-21/ 2>/dev/null"
+```
 
-If either chip fails to come up clean on v1.3.1: roll its config back to v1.1, reboot, document the failure, surface immediately.
+### I.3 — Aggregate via merge_corpus.py from azza proxy data
+
+Use the salvage pattern from Phase 4.1.1 — re-pair from azza proxy log (the canonical source). Outputs:
+- `bench/fork/lora/corpus/v1.3.1-overnight-2026-05-20.jsonl`
+- Per-chip split also available
+
+Time-window: launch ~17:56 MST 2026-05-20 → stop ~06:00 MST 2026-05-21. Expected ~9K total turns across 3 chips (3K each, ~270 sessions × 7 personas if rotation runs uninterrupted; T+10 was ~30 turns/chip pace which extrapolates to ~6K — the directive's 9K estimate may be high, calibrate from actual).
+
+### I.4 — Initial quality assessment (before labeling spend)
+
+Report:
+- Total turns per chip (raw + dedup)
+- Per-persona breakdown per chip
+- Any anomalies (resets mid-run, reply gaps, etc.)
+- Sample 5 random turns per chip (15 total) for sanity check
+
+### I.5 — Haiku labeling
+
+Estimated cost: ~$10–15 for ~9K turns (Haiku 4.5 pricing). Surface estimate before spending.
+
+Use the same labeling tool from Phase 4.1.4a. Same taxonomy (clean / pseudo-prose / fabricated / contradictory / error-reply / JSON-leak) plus the v1.3.1-target flags:
+- `led_indirect_reference_bug`
+- `reasoning_trace_leak`
+- `memory_chain_correct`
+- **NEW for this run:** `fabricated_state_claim` — explicitly flag turns where the model claims a system state (WiFi SSID, memory contents, file content) without having called the tool to retrieve it. This is the headline issue from Scott's 2026-05-20 5:13–5:30 PM probe.
+
+Output: `bench/fork/lora/corpus-labels/v1.3.1-overnight-2026-05-20.labeled.jsonl`
+
+### I.6 — Three-way comparison report
+
+`bench/fork/lora/corpus-labels/v1.3.1-vs-v1.1-vs-3.1.3-comparison.md`. Per-label rates across all three corpora, with focus on:
+- Did v1.3.1 preserve the v1.1 wins (clean rate, memory-chain)?
+- Did v1.3.1's constitutional improvements show up in production rate? (Look for refusals in natural traffic — though personas don't usually fire harm-class prompts, anything detected is signal.)
+- **`fabricated_state_claim` rate** — this is the next training target candidate
+- Per-chip variance (is one chip more degraded than the others? would suggest hardware/RF issues not model issues)
+
+### I.7 — Constitutional eval re-run against production v1.3.1
+
+The eval suite has been tested against models in Ollama (azza). Re-run it against the deployed-on-chip v1.3.1 to confirm no drift between the published HF model and the actual chip behavior:
+
+```bash
+python bench/fork/lora/eval/constitutional_eval/runner.py --model wireclaw-agent:v1.3.1 --output results/v1.3.1-production-default.jsonl
+python bench/fork/lora/eval/constitutional_eval/runner.py --model wireclaw-agent:v1.3.1 --temperature 0 --output results/v1.3.1-production-temp0.jsonl
+```
+
+Should match the v1.3.1 results from Phase 4.2.1.G (within sampling noise). If significant drift, investigate.
+
+### I.8 — Handback for Scott
+
+Write consolidated handback to `sync/from_code.md`:
+- Corpus stats (volume, per-chip, per-persona, dedup counts)
+- Three-way label comparison topline
+- Top failure modes by frequency in v1.3.1 production data
+- `fabricated_state_claim` rate (the headline signal from yesterday's probe)
+- Constitutional eval re-run result
+- Recommendation for next phase: v1.3.2 targeting fabrication, OR HA Tier 1 demo, OR something else informed by the data
+
+**STOP.** Do not initiate v1.3.2 synthetic generation. Do not start HA work. Wait for Scott + Cowork's strategic decision based on the data.
 
 ---
 
 ## Constraints
 
 - Sign all commits as Scott Whitney
-- Sonnet for synthetic generation (~$1–2)
-- Haiku for eval judging (~$0.10)
-- Brev: ~$5–7 budget, stop instance after download
-- Do NOT promote chips without Scott's explicit "promote chips" word — even if ship is approved, chip-config changes are L3
-- Preserve v1.1, v1.3 on azza Ollama (do not `ollama rm`) — three rollback tiers
-- Three-way comparison report is the deliverable — v1.1 stays as the baseline for project memory
+- Sonnet for synthetic gen (when relevant), Haiku for labeling/judging (cost discipline)
+- Do not run any model training tonight or tomorrow morning without explicit directive update
+- The morning fresh session reads CLAUDE.md first, then this file's 4.2.1.I section
 
 ## Reporting cadence
 
-Handback at each sub-phase boundary (G.A diagnosis findings, G.B synthetic ready, G.C training data assembled, G.D training launched and again when complete, G.E eval results). G.F is the gated handback. G.G has two internal gates (publish, promote-chips).
+Tomorrow morning (4.2.1.I): live reports at each step as the fresh session works through aggregation → labeling → analysis. I.5 cost estimate is the spending gate.
 
 ## Out of scope
 
-- HA Tier 1 integration (Phase 4.2.2 — after v1.3.1 chip promotion lands)
-- Another capture round (queued — would benefit from running ON v1.3.1 chips for more current data)
+- HA Tier 1 integration (Phase 4.2.2 — gated on tomorrow's data review)
+- v1.3.2 synthetic generation / training (gated on tomorrow's data review)
+- c6-pilot (c6-01) was revived today — its uptime data tonight is informative
 - Phase 4.0.4 firmware hardening
-- Phase 4.0.5 c6-01 reflash
 - Blog post drafting (background)
-- Phase 4.2.3 rubric extension (the `truthfulness_calibrated` axis — queued from 4.2.0b)

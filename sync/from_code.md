@@ -1,3 +1,56 @@
+# Code Handback — Phase 4.2.1.H — 3-chip overnight capture LAUNCHED — 2026-05-20 ~18:07 MST
+
+## Status: ✅ ALL SIX H STEPS COMPLETE. Capture running on c6-01 + c6-02 + c6-03. T+10 gate PASS. **Scott clear to power down.**
+
+### H.1 — Pre-flight: GREEN
+- Chips: all 3 reachable, all on `wireclaw-agent:v1.3.1`, heap 92-93k each, RSSI -48 to -57 dBm.
+- Pis: evobot/pi02/pi03 all SSH-accessible, `overnight_capture.sh` present each, telethon session files present (evobot session from earlier today's deploy; pi02/pi03 sessions from last overnight 2026-05-19).
+- All Pis on MST timezone — `date -d 'tomorrow 06:00'` math works as intended for watchdog target.
+- azza Ollama: v1.3.1 + v1.3 + v1.1 + v1 all listed (3 rollback tiers + the ancient v1 archive).
+
+### H.2 — Secrets env: ALREADY DEPLOYED (May 15)
+- All 3 Pis already have `~/.wireclaw-secrets.env` (mode 600) with all 3 of `TG_API_ID` + `TG_API_HASH` + `TG_PHONE`. No re-deploy needed. (Initial check undercounted because `^TG_API` matches only 2 of the 3 lines; corrected to `^TG_(API_ID|API_HASH|PHONE)=` and confirmed 3/3 on each Pi.)
+
+### H.3 — Pre-launch cleanup: GREEN
+- All 3 Pis: STOP_FLAG + status files removed; no stale `overnight_capture` / `persona_runner` processes.
+- All 3 chips: rule store cleared to `[]` (the 4.0.x lesson — fresh start, no poison rules).
+
+### H.4 — Launch: GREEN (all 3 captures running)
+- **evobot** → c6-01 / `wdl_c6_pilot_bot` → capture PID `8674`, watchdog PID `8678`, log `~/overnight-capture-1779325010.log`
+- **pi02** → c6-02 / `wdl_c6_02_bot` → capture PID `7456`, watchdog PID `7460`, log `~/overnight-capture-1779325016.log`
+- **pi03** → c6-03 / `wdl_c6_03_bot` → capture PID `13880`, watchdog PID `13884`, log `~/overnight-capture-1779325022.log`
+- Full 7-persona rotation via `PERSONAS` env var (persona_01 through persona_07 round-robin)
+- Watchdog targets **2026-05-21 06:00:00 MST** on each Pi (`sleep $TARGET_S && touch ~/STOP_FLAG`)
+- Wrapper's own 07:00 hour check is the backstop (Phase 4.0.4a precedent: detached watchdog primary, wrapper hour-check secondary)
+
+### H.5 — T+10 gate: PASS
+- All 3 captures alive, all on session #3 (persona_03_ambiguity_tester at gate time — rotation working: 01 → 02 → 03 in first 10 min)
+- All status files show `errors=0`, `consecutive_errors=0`
+- All replies are real model output, not boot banners. Sample replies at gate:
+  - **c6-03/pi03 (6 turns in current session):** `"Do that temperature thing again."` → `"The current chip temperature is 29.1 degrees Celsius."` (concrete value, indirect-reference path engaged)
+  - **c6-03/pi03:** `"Set it to that color we talked about."` → `"The LED is now a pretty purple color, which was your favorite!"` (indirect-reference chain working — or fabricated, will see in labeling)
+  - **c6-02/pi02:** `"Change it."` → `"The change has been recorded in the memory file…"` (abstract reference, gracefully engaged)
+- azza proxy traffic in last 5 min: c6-03 24 records / c6-01 15 / c6-02 14 (c6-03 is the fastest of the three). All three IPs producing live traffic.
+
+### Expected stop
+- **2026-05-21 ~06:00 MST** via per-Pi STOP_FLAG watchdog (primary)
+- **2026-05-21 ~07:00 MST** via overnight_capture.sh hour-check backstop (secondary)
+
+### Where the data lives
+- **Per-Pi user-side:** `~/wireclaw-corpus/user-side/*.jsonl` (Telegram-visible prompt/reply pairs)
+- **azza canonical proxy:** `~/wireclaw-corpus/ollama-raw/2026-05-20/*.json` and `2026-05-21/` (true model request/response — the salvage source from Phase 4.1.1)
+
+### Phase 4.2.1.I picks up tomorrow
+Fresh session reads `CLAUDE.md` then the I section of `sync/to_code.md`. I.1 verifies auto-stop fired. I.2-I.7 are aggregate → quality assess → Haiku label → three-way comparison → constitutional eval re-run. I.5 (Haiku spend ~$10-15) is the gated step.
+
+### Standing-by note
+**Scott can power down the workstation now. Capture runs independent.** All Pis + chips + azza are on their own power and SSH-reachable from any host (Tailscale + LAN). Tomorrow's fresh Cowork + Code session will pick up Phase 4.2.1.I autonomously.
+
+### Tag
+"2026-05-20 18:07 MST — Phase 4.2.1.H close: 3-chip overnight capture launched (c6-01 + c6-02 + c6-03 via evobot/pi02/pi03), full 7-persona rotation, watchdog 06:00 MST tomorrow, T+10 PASS errors=0 across all three; Scott cleared to power down."
+
+---
+
 # Code Handback — Phase 4.2.1.G — v1.3.1 DECISION GATE — 2026-05-20
 
 ## Status: ⏸️ DECISION GATE. v1.3.1 trained, deployed, validated. **Targeted harm-citation fix succeeded decisively** (6/6 Art 3/12 specificity — better than all prior models). **Two strict ship-criteria fail** (default-temp pass −1; authorization category regression). **My read: partial-ship territory; Scott decides; chips should stay on v1.1 either way.**
