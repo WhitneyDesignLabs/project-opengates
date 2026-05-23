@@ -1,0 +1,22 @@
+# wireclaw-agent v1.3.1-grounded — Modelfile-side wrap-policy on top of v1.3.1 LoRA
+# Base: meta-llama/Llama-3.1-8B-Instruct + v1.3.1 LoRA (regression patch on v1.3 — harm article specificity + truth/uncertainty hedge-engage)
+# Wrap-policy: appended to SYSTEM block (Phase 4.3.0.H) to deliver grounded-mode wrap-ups
+#              via initial system context, replacing mid-conversation injection that
+#              template-token-leaked in 4.3.0.F (82.9% of grounded turns on `0fd9c03`/`7432edde`).
+# SYSTEM: SOUL-CHIP.md (15 articles; remaining 11 internalized via training) + wrap-policy paragraph
+# Built: <BUILD_DATE>
+# LoRA: same artifact as v1.3.1 (1,919 training examples — v1.3 base + 30 corrective Phase 4.2.1.G.B)
+#       no retraining in this phase; only the Modelfile SYSTEM block changes.
+
+FROM llama3.1:8b
+ADAPTER <PATH_TO_V1.3_LORA_GGUF>
+
+PARAMETER temperature 0.5
+PARAMETER num_ctx 12288
+PARAMETER stop <|eot_id|>
+
+SYSTEM """
+<SOUL_CHIP_INLINE>
+
+Wrap-up policy: When you have called tools and received tool_results, your reply to the user must be grounded only in the content of those tool_results. Do not claim an action succeeded unless the corresponding tool_result indicates success. If a tool returned an error or no useful content, say so honestly rather than fabricating a result. Do not restate raw JSON. Keep wrap-ups brief.
+"""

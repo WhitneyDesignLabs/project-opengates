@@ -2895,3 +2895,68 @@ Rationale:
 ### Tag
 
 "2026-05-21 morning — Phase 4.2.1.I close: 4,500-turn overnight corpus labeled; v1.3.1 wrap-up fabrication regressed to 55.4% (vs v1.1's 39.8%), dominant subclass is action-claim without preceding tool_call (44% of fabrications). Strategic pivot: defer v1.3.2; Phase 4.3.0 firmware two-pass inference prototype next, to structurally eliminate action-claim fabrication. Bird's-eye: chip-deployment story intact at any model size — chip is agent, azza is brain."
+
+## 2026-05-21 ~16:00 MST — Phase 4.3.0 prototype close (firmware-side wrap-policy)
+
+Code landed commit `c1aa13e` on workspace main; branch `phase-4.3.0-two-pass-inference` on WireClaw-fork (firmware commits `be9372e` + `0fd9c03`, sha `7432edde`) preserved as audit trail. Two A/B rounds × 140 turns each on c6-01.
+
+**Concept validated.** Direct before/after on `ab_01_A` ("Same as before, please.", memory-seeded `favorite_color=green`): speculative-mode fabricated *"Your favorite color is blue"*; grounded-mode honestly refused: *"The tool call returned no useful value for answering the question…"*. Cleanest fabrication-vs-honesty contrast pair the project has produced.
+
+**Delivery mechanism broken.** Mid-conversation `system`-role injection causes Llama-3.1's chat template to drift on turn-boundary tracking — 82.9% (116/140) of grounded turns leak `<|start_header_id|>assistant<|end_header_id|>` and similar tokens into user-visible wrap-up text. Unshippable.
+
+**Headline numbers (final, 280 turns):** speculative ungrounded action-claim 2.9% / grounded 7.9% (raw, inflated by template leak); template-leak rate 0.0% spec / 82.9% grnd; median latency 26.7s / 28.8s. Clean (template-leak-excluded) grounded subset n=24 shows the wrap-policy behavioral signal is real — Bucket C clean-baseline ungrounded rate dropped to 0.0% in grounded mode.
+
+**Code's recommendation: iterate via option (b) — fold wrap-policy into Modelfile SYSTEM block, no firmware change.** Scott + Cowork reviewed and approved (next entry).
+
+**Cost:** $0 (azza self-hosted).
+
+**Standing:** c6-01 firmware `7432edde` + `wrap_mode=grounded`. c6-02 / c6-03 untouched on `bf80fa9` + `:v1.3.1`. azza Ollama still serves `:v1`, `:v1.1`, `:v1.3`, `:v1.3.1` (4 tags). Branch + commits + firmware sha preserved for audit trail; no rollback yet.
+
+## 2026-05-22 — Phase 4.3.0.H directive issued (Modelfile-side wrap-policy iteration)
+
+Scott chose option (b) and approved revised wrap-policy text (verbatim in `sync/to_code.md` H.2). New directive Phase 4.3.0.H written to `to_code.md`: locate v1.3.1 Modelfile, append wrap-policy paragraph to SYSTEM block, `ollama create wireclaw-agent:v1.3.1-grounded` on azza, flip c6-01 to new tag (also flip `wrap_mode=speculative` first so firmware injection is disabled — Modelfile is pure delivery channel), re-run 28-prompt A/B with both arms (control `:v1.3.1` vs treatment `:v1.3.1-grounded`, *only* variable is the Modelfile paragraph), analyze, handback.
+
+**No L3 in this phase** — no firmware flash, no firmware code change. c6-01 firmware stays on `7432edde` throughout. Hard gate at H.2 before `ollama create` (Cowork + Scott review rendered Modelfile diff). Hard STOP at H.3 smoke test if template leak reproduces on Modelfile-side delivery (would invalidate option (b) and surface a deeper finding for the publishable writeup).
+
+**Approved wrap-policy text (revised vs 4.3.0):** sentinel prefix dropped (vestigial — no filter to bypass on this channel); reframed from present-perfect "you have just received" to conditional "when you have called tools and received" (standing-policy shape for initial-context delivery); scope hook `Wrap-up policy:` opens the paragraph; explicit "or no useful content" branch reinforced from Round 2 clean-grounded behaviors. Five load-bearing clauses preserved.
+
+**Expected cost:** $0 (Modelfile edit + `ollama create` are azza-local; A/B re-run is azza-local compute).
+
+**Standing:** Code picks up the directive next session. v1.3.2 LoRA training still deferred (I.8 plan; separate directive after 4.3.0.H closes). HA Tier 1 still gated. c6-02 / c6-03 production-untouched.
+
+**Tag:** "2026-05-22 — Phase 4.3.0.H directive: Modelfile-side wrap-policy delivery (`:v1.3.1-grounded` additive tag, no firmware change); single-isolated-variable A/B (only Modelfile differs across arms); ~$0 expected cost; option (b) test against the 82.9% template-leak failure mode."
+
+## 2026-05-22 ~16:00 MST — Phase 4.3.0.H close + decision
+
+Code's H handback landed (`from_code.md` newest-first). 280-turn A/B clean: template-leak **eliminated** (82.9% → 0.0%) confirming Modelfile-side delivery is the clean channel; action-claim fabrication **not suppressed** (5.7% → 7.9% ungrounded; Bucket A regression +5pp; action-claim *rate* identical 37.9% / 37.9%). Direct evidence (`ab_01_A` treatment run 2) shows the model claiming *"LED is now green"* with only `file_read` fired — violating the wrap-policy clause in its own SYSTEM context. Trained priors dominate text-layer guidance at 8B Llama-3.1 scale.
+
+**Decision (Scott + Cowork):** accept Code's recommendation 3 — **abandon Modelfile-side iteration, pivot to v1.3.2 LoRA per Code's I.8 + H.7 plan** (~$2.50 projected, sub-week wall). Rationale: action-claim rate parity across arms means text-layer leverage is bounded; rec 2a/2b iterations (reposition wrap-policy / reword SOUL-CHIP) estimated 2-3pp shift at best per Code; the fix needs to attack the trained-prior layer, not the deploy-time-text layer.
+
+**Publishable claim revised (stronger than 4.3.0.G's):**
+1. *Delivery channel matters for template integrity.* Validated cleanly: same wrap-policy text, two channels → 82.9% vs 0.0% template-leak. Publishable positive.
+2. *Text-layer prompt-engineering has limited leverage on behavioral discipline at small-model scale.* Validated cleanly: same text in clean channel, action-claim rate parity. Publishable negative.
+
+Both axes are actionable contributions to embedded-agent literature. The negative is harder-won and justifies the v1.3.2 training spend.
+
+**Commit decision:** analyzed data only (`metadata.jsonl`, `per_turn.jsonl`, `ab_summary.md`, `armA.log`, `armB.log` + 7 new sdcard-images scripts + `wireclaw-agent-v1.3.1-grounded.Modelfile.template` + handback append + worklog). Raw `proxy-2026-05-22/` (12 MB, 520 files) stays on azza in `~/wireclaw-corpus/ollama-raw/2026-05-22/` — matches 4.3.0.F precedent. Reference azza path in `ab_summary.md` footer.
+
+**c6-01 disposition:** stays on `:v1.3.1-grounded` post-handback (small production drift; rolls back trivially). Phase 4.4.0 pre-flight will flip back to `:v1.3.1` to remove eval confound.
+
+**Carried-forward findings for v1.3.2 design:**
+- Bucket C qualitative win on direct-command shape (treatment 5/5 correct vs control 4/5 "deep purple" miss) — 4.3.0.F/H regex rubric undercounted this. v1.3.2 synth should preserve this discipline, not displace.
+- /clear-history-bleed: chip's LLM conversation history isn't fully flushed by driver's `/clear` (`ab_28_C` runs 1/2/4 produced "deep purple" with no memory seed referencing it; present in 4.3.0.F too). Must be addressed in 4.4.0 pre-flight or it'll contaminate the v1.3.2 vs v1.3.1 A/B.
+- Anomalous −1,823 prompt-token mean on treatment arm (vs +50 expected from SYSTEM-block append). Hypothesis: Ollama prompt-cache accounting under different model-tag boundaries. Worth a brief verification probe in pre-flight.
+
+## 2026-05-22 PM — Phase 4.4.0 directive issued (v1.3.2 LoRA)
+
+Active directive written to `sync/to_code.md`: mirror the 4.2.1.A-G structure that produced v1.3 → v1.3.1, applied to four-bucket corrective synth (action-claim suppression / memory-chain completion / roleplay-jailbreak hardening / authorization default-temp recovery), totaling ~60-90 new corrective examples. Same Brev recipe (training hyperparameters held constant vs v1.3.1 — single-axis change for interpretability).
+
+Pre-flight gates v1.3.2 work behind: (1) committing pending H artifacts, (2) c6-01 roll-back to `:v1.3.1`, (3) resolving or documenting `/clear`-bleed, (4) verifying prompt-token anomaly. Hard gate after 4.4.0.A synthesis design before Sonnet generation (most consequential design decision in the phase). Hard cost-gate on Sonnet at $0.50 and Brev at standard discipline (stop instance immediately after GGUF download). Strict ship criteria (7 axes) for chip promotion; partial-ship and rollback paths defined.
+
+**Standing:** Code reads CLAUDE.md → `to_code.md` top → STATUS=4.4.0 → scrolls to active section (after closed-phase records). v1.3.2 LoRA work has not started. c6-01 on `:v1.3.1-grounded` until pre-flight rolls back. c6-02/c6-03 production-untouched.
+
+**Tag:** "2026-05-22 — Phase 4.3.0.H closed (rec 3 accepted, Modelfile-side text-layer guidance proven insufficient against trained priors); Phase 4.4.0 directive issued (v1.3.2 LoRA targeting action-claim fabrication head-on at the training layer, ~$2.50 projected). Two-axis publishable claim refined: delivery channel matters for template integrity (positive), prompt-engineering insufficient for behavioral discipline at 8B scale (negative)."
+
+## 2026-05-22 ~17:00 MST — Code: Phase 4.3.0.H artifacts committed, 4.4.0 pre-flight starting
+
+Code committed analyzed-only H artifacts per directive 4.4.0.0.1 (7 sdcard-images scripts + Modelfile template + `results-4.3.0.H/{ab_summary.md,per_turn.jsonl,metadata.jsonl,armA.log,armB.log}` + appended handback). Raw `proxy-2026-05-22/` excluded — referenced at azza path in `ab_summary.md` footer. Pre-flight items 2 (c6-01 roll-back), 3 (`/clear`-bleed scoping), and 4 (prompt-token-anomaly probes) next; items 3 and 4 are the hard gate before 4.4.0.A synth design.
