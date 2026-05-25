@@ -1,3 +1,104 @@
+# Code Handback — Phase 4.4.0.A v1.3.2 synth design — HARD GATE before 4.4.0.B — 2026-05-24
+
+## Status: ⏸️ DECISION GATE before Sonnet generation (B). Design doc landed at `bench/fork/lora/training/v1.3.2-synth-design.md` (~270 lines, 78 examples across 5 buckets). Three open questions need Cowork + Scott sign-off before B kicks off. Most consequential design choice: **multi-message training shape** for buckets 1 + 2 + C (departs from v1.3.1's single-message tool/content shape; new shape separates tool_call assistant turns from grounded wrap-up assistant turns, matching the chip's inference-time multi-iteration agent loop). Surfacing inline in chat is NOT sufficient — flagged + corrected per CLAUDE.md "file channel is authoritative."
+
+---
+
+### What ran (4.4.0.A — no spend)
+
+- Read `phase_4_2_1g_synth.py` (v1.3.1 G.B corrective synth template), `v1.3-train.manifest.md`, `v1.3.1-train.manifest.md`, sample tool-shape records from `v1.3-train.jsonl`. Confirmed v1.3.1's tool-using records combine `tool_calls` + `content` in a single assistant message — this is the trained shape that produces speculative wrap-ups. Root cause of 4.3.0.H Bucket A failure mode.
+- Drafted `bench/fork/lora/training/v1.3.2-synth-design.md` covering all four buckets + bucket-C regression guard, per-sub-bucket counts and shapes, Sonnet generator system prompt design, sampling/dedup rules, inter-bucket interactions, and 3 risks.
+
+### Headline design — 78 corrective examples
+
+| bucket | n | shape | target failure |
+|---|---:|---|---|
+| 1 — Action-claim suppression | 40 | **multi-message tool chain** (positive + negative) | dominant fabrication shape (44% of v1.3.1 fabrications) |
+| 2 — Memory-chain completion | 18 | multi-message tool chain (positive) | file_read → fabricated action without action_tool |
+| 3 — Roleplay-jailbreak | 8 | single-message refusal-with-cite | `deception_04` failing at both temps in production |
+| 4 — Authorization default-temp | 9 | single-message refusal-with-cite | `auth_04`/`auth_06` regression from v1.3.1's G.F finding |
+| C — Regression guard | 3 | multi-message tool chain (direct command) | preserves Bucket C qualitative win |
+
+### Critical decision — training shape change for buckets 1 + 2 + C
+
+**Existing v1.3.1 shape (single-message; trains speculation):**
+```json
+{"role": "assistant", "content": "<premature wrap-up>", "tool_calls": [...]}
+```
+
+**Proposed v1.3.2 shape (multi-message; separates tool_call from grounded wrap-up):**
+```json
+{"role": "user", "content": "Set the LED to my favorite color"},
+{"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "file_read", "arguments": "{\"path\":\"/memory.txt\"}"}}]},
+{"role": "tool", "tool_call_id": "1", "content": "favorite_color=green"},
+{"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "led_set", "arguments": "{\"r\":0,\"g\":255,\"b\":0}"}}]},
+{"role": "tool", "tool_call_id": "2", "content": "success: rgb(0,255,0) set"},
+{"role": "assistant", "content": "The LED is now green."}
+```
+
+Two rules: (i) assistant messages emitting `tool_calls` have **empty `content`** — no speculation. (ii) Final assistant message has populated `content` grounded in the immediately-preceding `tool` result — and no `tool_calls`. v1.3.1's existing single-message tool records **stay** in the v1.3.2 train set; new shape is additive. The LoRA learns both; the new shape teaches the discipline.
+
+### Critical sub-bucket — 1k "action-claim trap" (3 examples)
+
+Most important examples in bucket 1. Explicitly trains the **inverse of 4.3.0.H `ab_01_A` treatment run 2's failure shape** (model claimed *"The LED is now green!"* with only `file_read` fired). Two correct shapes mixed in 1k:
+
+- **Defer-and-ask:** model reads memory, surfaces the value, then **asks** before acting:
+  > *"Your favorite color is green. I haven't set the LED yet — should I call led_set with rgb(0,255,0)?"*
+- **Chain-and-execute:** model reads memory, then chains directly to the action tool, then grounds the wrap-up in both tool results.
+
+The wrong shape (speculate without firing the action tool) gets **no positive examples** in the corrective set.
+
+### Color-variation requirement (per 4.4.0.0 side-finding)
+
+`led_set` tool description (`src/tools.cpp:129`) seeds `'LED purple'` in every `/api/chat` request. LED-action subset (~15 examples across 1a/1b/2a/C1) uses distributed color set: red×2, blue×2, green×2, yellow/orange/white/pink/cyan/purple/magenta/off/compound ×1 each. One purple example (not clustered to amplify the seed, not avoided to invert it) — neutralizes bias.
+
+### Three open questions for Cowork + Scott
+
+1. **Bucket 2 oversample ×2?** v1.3 manifest oversampled `memory_chain_correct` ×3. New shape is more decisive than the old — recommend ×2 (adds 18 → 54 effective records). Confirm or change?
+
+2. **Tool_result content generation: Sonnet or explicit?** Recommend Sonnet generates plausible result strings (cost-efficient; cache-dominant). Post-generation sanity check: result strings don't contain instruction-shape "hints" the LoRA might overfit to. Approve?
+
+3. **"Iteration-1 wrap-up only" records?** Could include records where the model is given a synthetic conversation up through the tool_result and trained ONLY on the grounded wrap-up. Would reinforce wrap-up discipline without re-training the tool-call shape. Recommend **NO** for v1.3.2 — keeps recipe single-axis; defer to v1.3.3 if v1.3.2 partial-succeeds. Confirm?
+
+### Risks I want Cowork's eyes on
+
+- **Multi-message shape may need Brev/trainer code verification.** v1.3.1 used single-message shape only. Pre-flight for 4.4.0.D: load 3-5 bucket-1 records through `smoke_test.py` to confirm Llama-3.1 chat-template handles multi-message tokenization cleanly. If broken, 4.4.0.B output is unusable until trainer fixed.
+- **LoRA may over-generalize "tool_calls → empty content" to ALL turns.** Bucket 3 + 4 + 1k act as counter-examples; balance should hold. Worth a smoke-eval check at 4.4.0.D before promoting to A/B.
+- **78 records may be too small a signal for a shape change.** v1.3.1 G.B succeeded with 30 records but targeted narrower failure mode (article citation lead-phrase). v1.3.2 attempts both a content-fix AND a shape-change. If 4.4.0.E shows partial success only, recommend doubling bucket 1 (40 → 80) in v1.3.3 rather than reshaping recipe further within 4.4.0.
+
+### What needs your call
+
+1. **Approve design doc** (or specific revisions) — including the multi-message shape change for buckets 1 + 2 + C.
+2. **Answer three open questions** above (oversample / tool_result generation / iter-1-only records).
+3. **Acknowledge risk 1** (Brev/trainer multi-message verification gates 4.4.0.D, not 4.4.0.B — but worth pre-noting since the data shape change is irreversible at B).
+
+### Code state
+
+- Design doc: `bench/fork/lora/training/v1.3.2-synth-design.md` (uncommitted; will commit alongside 4.4.0.B output per usual phase rhythm, OR commit now if Cowork prefers to anchor the doc independently of B output).
+- c6-01: on `:v1.3.1` + `wrap_mode=speculative` + firmware `7432edde` (production-equivalent post 4.4.0.0.2 roll-back).
+- c6-02 / c6-03: untouched on `bf80fa9` + `:v1.3.1` production.
+- azza Ollama: 5-tag rollback ladder intact (`v1`, `v1.1`, `v1.3`, `v1.3.1`, `v1.3.1-grounded`).
+
+### Spend recap (Phase 4.4.0.A)
+
+| step | cost |
+|---|---:|
+| Read prior synth code + manifests + sample records | $0 |
+| Draft v1.3.2-synth-design.md | $0 |
+| **Phase 4.4.0.A total** | **$0** |
+
+Projected 4.4.0.B: ~$0.20 (78 examples; soft-stop $0.50).
+
+### Standing-by note
+
+**STOPPED at hard gate before 4.4.0.B per directive.** Did NOT initiate Sonnet generation. Did NOT touch chip configs. Did NOT touch azza Ollama state. Did NOT commit the design doc — will commit alongside 4.4.0.B output (or earlier if Cowork prefers).
+
+### Tag
+
+"2026-05-24 — Phase 4.4.0.A v1.3.2 synth design landed (78 examples across 5 buckets, multi-message tool-chain shape for buckets 1+2+C as the principled fix for v1.3.1's single-message speculation training shape, 1k action-claim-trap as inverse-of-ab_01_A-failure subset, color-variation requirement enforced per 4.4.0.0 side-finding). Three open questions surfaced for Cowork + Scott. Hard gate before B. Hygiene note: design surface was initially chat-only; corrected to file-channel per CLAUDE.md."
+
+---
+
 # Code Handback — Phase 4.3.0.H Modelfile-side iteration — RECOMMENDATION: ABANDON Modelfile-side, pivot to v1.3.2 LoRA — 2026-05-22 ~16:00 MST
 
 ## Status: ⏸️ DECISION GATE. Modelfile-side delivery STRUCTURALLY ELIMINATED the 82.9% chat-template-token leak from 4.3.0.F (Arm B: 0.0% leak, n=140 grounded turns). But the wrap-policy text itself — byte-identical to what 4.3.0.F's broken channel injected — DID NOT measurably suppress action-claim fabrication. Action-claim rate identical between arms (37.9% / 37.9%); ungrounded-action-claim rate slightly worse on treatment (5.7% → 7.9%); Bucket A (primary target, Site-2 shape) regressed (10.0% → 15.0%). **My read: the v1.3.1 LoRA's trained speculative-wrap-up bias dominates over SYSTEM-level text guidance; behavioral discipline must be baked in via training, not via prompt engineering. Abandon Modelfile-side iteration, pivot to v1.3.2 LoRA per the I.8 plan from 2026-05-21 morning.**

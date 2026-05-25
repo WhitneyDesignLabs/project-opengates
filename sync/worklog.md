@@ -2960,3 +2960,52 @@ Pre-flight gates v1.3.2 work behind: (1) committing pending H artifacts, (2) c6-
 ## 2026-05-22 ~17:00 MST — Code: Phase 4.3.0.H artifacts committed, 4.4.0 pre-flight starting
 
 Code committed analyzed-only H artifacts per directive 4.4.0.0.1 (7 sdcard-images scripts + Modelfile template + `results-4.3.0.H/{ab_summary.md,per_turn.jsonl,metadata.jsonl,armA.log,armB.log}` + appended handback). Raw `proxy-2026-05-22/` excluded — referenced at azza path in `ab_summary.md` footer. Pre-flight items 2 (c6-01 roll-back), 3 (`/clear`-bleed scoping), and 4 (prompt-token-anomaly probes) next; items 3 and 4 are the hard gate before 4.4.0.A synth design.
+
+## 2026-05-22 PM — Phase 4.4.0.0 pre-flight close + decisions
+
+Code's pre-flight investigation closed all four items. Commit `0172e36` landed (H artifacts pushed to origin/main). c6-01 rolled back to `:v1.3.1`. Items 3 and 4 surfaced substantive findings that change how we read H and how we design v1.3.2.
+
+**Item 3 — `/clear`-history-bleed: diagnosed as DRIVER METHODOLOGY BUG, not firmware.** `/clear` works correctly at firmware level (`main.cpp:1644` → `handleCommand` → `main.cpp:767` flushes both `historyCount` and `HISTORY_FILE` from LittleFS with no LLM call). The bleed is from the 4.3.0.F/H driver's loop structure: outer per-prompt loop resets state; inner 5-runs-per-prompt loop does NOT. Runs 2–5 inherit conversation history from runs 1 to N−1, anchoring subsequent runs to first-run outcomes. **Cowork decision: apply driver fix (Code's option a) in 4.4.0.E.2** — per-run `/clear` + rules + memory reset, ~5-line driver change, ~12 min added wall per arm. Options (b) accept-and-document and (c) both-with-history-on-side-eval declined.
+
+**Item 3 — methodological caveat on H.** The driver bug means H's per-bucket sub-measurements (notably Bucket A +5pp regression on treatment) are partially methodological — 60 turns per arm in Bucket A is not 60 independent observations. The action-claim *rate* parity (37.9%/37.9%) is robust because it's a 140-turn average where history anchoring averages out. **Two robust H findings stand:** (1) delivery channel matters for template integrity (82.9% → 0.0%; clean positive); (2) text-layer prompt-engineering has limited leverage on action-claim grounding at 8B scale (rate parity). The Bucket A "regression" gets demoted to a footnote in the publishable writeup with explicit methodology caveat. **Doesn't change the v1.3.2 pivot** — the rate-parity finding is what drives "trained priors dominate"; the v1.3.2 case rests on that, not on the bucket numbers. v1.3.2's 4.4.0.E.2 A/B (with driver fix applied) replaces H's Bucket A numbers as the canonical action-claim-grounding data.
+
+**Item 4 — prompt-token anomaly RESOLVED: iteration-count variance, not cache.** Treatment per-iter is HIGHER (+134 tokens, consistent with the +78-token wrap-policy paragraph). But treatment uses 1.27 *fewer* agent-loop iterations on average → fewer total proxy records per turn → lower aggregated `prompt_tokens_total`. **The wrap-policy paragraph shortens the agent loop by ~15%.** Ollama prompt-cache hypothesis from H.6 falsified. **Cowork decision:** document in 4.4.0.E analyzer (surface `total_prompt_tokens`, `n_iters`, `per_iter_prompt_tokens` as separate fields), AND flag as **publishable side-effect** — text-layer guidance has limited leverage on action-claim grounding *specifically*, but does measurably influence other agent behaviors (loop length, and per H.7 the Bucket C qualitative direct-command win). Adds nuance to the publishable two-axis claim; strengthens rather than weakens the writeup.
+
+**Side-finding from item-3 investigation — `led_set` tool description seeds "purple."** `src/tools.cpp:129` includes the inline example `'LED purple'->r=128,g=0,b=128` in the tool definition, which lands in every `/api/chat` request regardless of history. Plausibly contributes to v1.3.1 production's "deep purple" fabrications on direct color commands. **Cowork decision:** address at LoRA layer in 4.4.0.A synth design (varied color examples — red, blue, green, yellow, white, orange, pink, cyan, balanced across bucket-1 LED examples), NOT firmware layer (would require L3 flash for negligible gain when the same problem can be attacked at the training layer). Revisit tool-description firmware change only if v1.3.2 doesn't fully resolve.
+
+**Standing:** Code cleared to proceed to 4.4.0.A (synthesis design). All four pre-flight items closed. Driver fix and color-variation requirement landed in `to_code.md` updates to 4.4.0.A bucket-1 and 4.4.0.E.2 spec. Publishable-writeup methodology caveat captured in `to_code.md` 4.4.0.0 outcomes block.
+
+**Tag:** "2026-05-22 PM — Phase 4.4.0.0 pre-flight close: `/clear`-bleed was driver methodology bug not firmware (fix lands in 4.4.0.E.2 driver, +12 min wall per arm); prompt-token delta was iteration-count variance not cache — wrap-policy text shortens agent loop ~15% (publishable side-effect); `led_set` tool description seeds 'purple' (addressed via LoRA color-variation in 4.4.0.A synth, not firmware); H's Bucket A regression demoted to writeup footnote with methodology caveat, rate-parity finding stands. Code cleared to 4.4.0.A."
+
+## 2026-05-24 — Phase 4.4.0.A synthesis design GATE-APPROVED
+
+Code's design doc (`bench/fork/lora/training/v1.3.2-synth-design.md`, ~270 lines, 78 examples across 5 buckets) reviewed by Scott + Cowork. **Approved with three small refinements before 4.4.0.B:**
+
+1. Sanity-check checklist for Sonnet-generated tool_result content — write as explicit 3-line operational criteria in design doc §4 (replace vague "doesn't contain instruction-shape hints" with deterministic checks).
+2. Dedup-key fix in design doc §5 — current `sha1(user, final_assistant_content)` would erroneously remove v1.3.1 baseline records that match v1.3.2 corrective examples, contradicting §5's own principle ("Do NOT remove existing v1.3.1 examples"). Fix: dedup ONLY within corrective set, NOT against v1.3.1 baseline. OR include shape signature (single-message vs multi-message) in hash key.
+3. New hard gate **4.4.0.A.1 — Trainer compatibility smoke-test** added between A and B in `to_code.md`. Verifies multi-message tool-chain shape tokenizes cleanly through Brev pipeline before spending B's $0.20. ~$0 cost, ~30 min Code time. Catches the irreversible-data-shape risk early; 5 hand-crafted probe records cover bucket-1 positive/negative + bucket-2 + bucket-3/4 single-message regression check + bucket-C direct-command. Four success criteria (tokenizer accepts; role-boundary tokens present; data-loader accepts; single-message path unchanged). Stop-and-surface if any fails.
+
+**Three open-question calls (Scott + Cowork):**
+- **Q1 oversample bucket 2 ×2:** YES (×3 would overweight memory-chain in the corrective set).
+- **Q2 Sonnet generates tool_result content:** YES with sanity-check checklist per refinement 1.
+- **Q3 iter-1-only records in v1.3.2:** NO. Single-axis discipline. Defer to v1.3.3 if v1.3.2 partial-succeeds.
+
+**Three risks acknowledged:** Risk 1 (multi-message trainer compatibility) escalated to new 4.4.0.A.1 gate before B (vs Code's original "verify at pre-D"). Risks 2 (LoRA over-generalization to empty-content) and 3 (78 records may be insufficient signal) accepted as-noted; v1.3.3 contingency levers preserved (iter-1-only records, double bucket 1 to 80, double 1k to 6-8 if residual failures cluster in action-claim-trap shape).
+
+**Design doc commit decision:** commit NOW, independent of B output. The §1 root-cause diagnosis (v1.3.1's single-message shape literally trains the speculative behavior we observed; multi-message is the structural fix) is publishable-writeup material on its own.
+
+**Substantive design observations carried forward to publishable writeup notes:** (a) The multi-message shape change is the strongest design choice in the doc — it attacks the failure mode at the training-data architectural level rather than via more text/examples in the existing shape. (b) The 1k "action-claim trap" subset (3 examples, two correct paths: defer-and-ask + chain-and-execute) explicitly inverts the 4.3.0.H `ab_01_A` failure shape — clean experimental design. (c) Color-variation table (red×2/blue×2/green×2/yellow/orange/white/pink/cyan/purple×1/magenta/off/compound×1) cleanly neutralizes the `led_set` tool-description "purple" seed without inverse bias.
+
+**Code is cleared to:** commit design doc now → apply three refinements (sanity-checklist + dedup fix to design doc; A.1 step lives in to_code.md so no design-doc edit for that one) → execute 4.4.0.A.1 trainer smoke-test → if A.1 passes, proceed autonomously to 4.4.0.B (Sonnet generation, ~$0.20).
+
+**Standing:** c6-01 on `:v1.3.1` + `wrap_mode=speculative` + firmware `7432edde` (production-equivalent). c6-02 / c6-03 untouched on `bf80fa9` + `:v1.3.1`. azza Ollama 5-tag rollback ladder intact.
+
+**Tag:** "2026-05-24 — Phase 4.4.0.A gate-approved: multi-message tool-chain shape change is the principled fix for v1.3.1's single-message speculation training; 78 corrective examples; three design-doc refinements + new 4.4.0.A.1 trainer compatibility smoke-test (~$0, ~30 min) added as pre-B gate to catch Brev pipeline risk before spending B's $0.20. v1.3.2 spend trajectory still ~$2.50 + sub-week wall."
+
+## 2026-05-24 — Code: Phase 4.4.0.A refinements applied + design doc committed
+
+Applied Cowork's two design-doc refinements (sanity-check checklist for Sonnet-generated `tool` content as new §4.1 — three deterministic checks: no imperative-led result strings, no second-person addressing of the model, no quoted instruction snippets; dedup-key fix in §5 — Option A chosen: dedup ONLY within corrective set, no cross-set comparison at assembly time per refinement rationale). Refinement 3 (4.4.0.A.1 trainer compatibility smoke-test) lives in `to_code.md` directive, no design-doc edit needed.
+
+**v1.3.3 carry-forward (per Cowork instruction):** if v1.3.2 partial-succeeds and residual failures cluster in 1k-shape ("action-claim trap" — model speculates after read-tool when no action tool was fired), the first lever in v1.3.3 is **doubling bucket 1k from 3 → 6-8 examples**. Trade more examples for stronger discipline on the canonical failure shape. Record now so it survives v1.3.2's eval close.
+
+**Standing:** design doc committed (signed Scott Whitney) at the standard incremental-artifact cadence Cowork requested. 4.4.0.A.1 trainer smoke-test starting next.
