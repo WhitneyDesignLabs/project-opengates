@@ -1,6 +1,22 @@
 # WireClaw / ESP32-C6 — Project Status
 
-**Last updated:** 2026-05-20 evening (Phase 4.2.1.G + Phase 4.0.5-lite — v1.3.1 patch shipped, full 3-chip fleet on v1.3.1, c6-01 revived from boot loop)
+**Last updated:** 2026-05-28 — **CURTAIN CALL.** v1.3.2 rolled back at the 4.4.0.F ship gate; the v1.3.x research line is rested. Project enters a documented resting state with v1.3.1 as production. Next chapter: Home Assistant Tier 1.
+
+> ## ⏸️ Resting state (2026-05-28)
+>
+> The v1.3.x constitutional-LoRA research line is **rested**, not abandoned. v1.3.2 (Phase 4.4.0) failed its primary objective — action-claim fabrication moved 6.4% → 8.6% — and was rolled back (2–3 of 7 ship criteria). The headline finding: **action-claim grounding at 8B Llama-3.1 is resistant to both deploy-time prompt engineering (4.3.0.H) and targeted LoRA fine-tuning (4.4.0)** — a clean publishable negative result.
+>
+> **Production is frozen and stable:** three chips on `wireclaw-agent:v1.3.1` + firmware `bf80fa9`; azza 6-tag rollback ladder intact (`:v1.3.2` audit-only, not promoted, not published to HF). Repo tagged `v1.3.2-rollback`.
+>
+> **Read for the full picture:** `PROJECT_EVALUATION_2026-05-28.md` (what worked, the negative result, candidate directions), `KNOWN_ISSUES_AT_REST.md` (open debts), `HA_TIER1_GROUNDWORK.md` (next-chapter design).
+>
+> **Chosen path:** (A) rest + write up the finding — done, see `RESEARCH_FINDINGS.md` (canonical public writeup of the negative result) — then (D) plan/build Home Assistant Tier 1, the stepping-stone product where HA supplies ground truth, so the 8B fabrication limit stops mattering.
+>
+> _The detailed snapshot below is preserved from the 2026-05-20 active-development state for historical continuity._
+
+---
+
+**Last updated (historical snapshot below):** 2026-05-20 evening (Phase 4.2.1.G + Phase 4.0.5-lite — v1.3.1 patch shipped, full 3-chip fleet on v1.3.1, c6-01 revived from boot loop)
 
 ## Current state pointer (read this first if you are a fresh session)
 
