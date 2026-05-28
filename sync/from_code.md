@@ -1844,3 +1844,56 @@ Tag: "Phase 4.4.0.D driver ready, prerequisites green (2015-record train set), a
 - **E artifacts (uncommitted, ready for an F-time commit on your go):** `results-v1.3.2/{constitutional_default,constitutional_temp0}.{md,jsonl}`, `manual_probe.md`, `action_claim_ab.{md,jsonl}`, `phase_4_4_0e_ab_metadata.jsonl`, `proxy-2026-05-28/` (516 chip captures — raw, exclude from commit per convention). Scripts: `sdcard-images/phase_4_4_0e_*` + `phase_4_4_0e_compare.py`.
 
 **Tag:** "Phase 4.4.0.E complete — v1.3.2 fails primary objective (action-claim grounding 8.6% vs 6.4% control, wrong direction); 3/7 ship criteria → directive maps to ROLLBACK. Real wins: deception_04 temp=0 PASS + identity_stress 4/4. Confirms H.7 two-axis finding across both fix layers. STOP for Scott's ship/rollback call — no chip/HF action taken."
+
+---
+
+## Phase 4.5.0 — CURTAIN CALL handback (Code → Cowork/Scott) — 2026-05-28
+
+**Status:** 4.5.0 wind-down COMPLETE through F. All local work done and committed. **Every public push is staged and GATED — nothing pushed.** Awaiting Scott's go on the items in "GATED PUSHES" below. After this handback: STOP (per directive — no new work, no HA build, until a future directive opens the HA chapter).
+
+### Ordering note
+The directive (4.5.0.A) said to create the `v1.3.2-rollback` tag after F.2. I deliberately created it at the **end** of the curtain-call commits instead, so the tag anchors the COMPLETE resting state (the tag message references `PROJECT_EVALUATION_2026-05-28.md`, and `PROJECT_STATUS.md`/README reference the eval, findings, known-issues, and HA docs — all of which had to be committed first). Tag now points at the true resting tip.
+
+### 4.5.0.A — Resting-state tag + tree hygiene ✅
+- Tree confirmed: only the curtain-call docs were staged; the pre-existing `??` training-data/corpus files were left untouched (not bulk-added, per directive). `output/` weights dir (`bench/fork/lora/training/output`) verified **gitignored**.
+- **Annotated tag `v1.3.2-rollback` created at `5ee61c0`** (final tip), tagger Scott Whitney, message: "End of v1.3.x research line — v1.3.2 rolled back, v1.3.1 remains production. See PROJECT_EVALUATION_2026-05-28.md". **NOT pushed (gated).**
+
+### 4.5.0.B — GitHub/README review + draft (GATED) ✅ drafted
+- **Safety check (step 5) PASSED:** no model weights/adapters tracked in the repo. `git ls-files` shows zero `.gguf/.safetensors/.bin/.pt/adapter_model` files; the "v1.3.2"-named tracked files are eval results, text training-data JSONL, configs, and design `.md` (not weights). Local v1.3.2 weights confirmed gitignored. **No history rewrite needed.**
+- **README diff committed locally** as `5ee61c0` (isolated commit so Scott can review/adjust the public wording cleanly). Surgical additions only:
+  - Updated stale Model link `wireclaw-agent-v1.1-lora` → `wireclaw-agent-v1.3.1-lora`.
+  - Added a "⏸️ Project status (2026-05-28) — research line rested at v1.3.1" banner near the top: resting state, v1.3.2 rollback + tag link, the negative-result headline, links to `RESEARCH_FINDINGS.md` + `PROJECT_EVALUATION_2026-05-28.md`, and HA Tier 1 as the next chapter linking `HA_TIER1_GROUNDWORK.md`.
+- **Repo "About"/description (step 4) — for Scott to apply in the GitHub web UI** (outside Code's access). Suggested description text:
+  > Constitutional AI agent for ESP32-C6 — a LoRA-fine-tuned Llama 3.1 8B governed by a 26-article constitution. Research line rested at v1.3.1 (2026-05-28); next chapter: Home Assistant Tier 1.
+
+  Suggested topics: `esp32`, `llama`, `lora`, `constitutional-ai`, `home-assistant`, `ollama`.
+
+### 4.5.0.C — HuggingFace verify + card draft (GATED, read-only verify done) ✅
+Verification (read-only, all three checks PASS):
+1. **v1.3.1-lora card accurate** — exists, describes v1.3.1 as the active chip-production release (v1.1→v1.3.1 promotion, regression patch on v1.3), base meta-llama/Llama-3.1-8B-Instruct, ~84 MB PEFT/LoRA, Constitution v0.2.0. No stale claims.
+2. **v1.3-lora superseded banner intact** — top-of-card "⚠️ Superseded for chip production by v1.3.1-lora (2026-05-20)" present and correct.
+3. **v1.3.2 NOT published to HF** — `wireclaw-agent-v1.3.2-lora` returns **HTTP 401** (no public repo; HF returns 401 for missing/private repos). Confirmed not a public release, per the F decision.
+
+**Drafted v1.3.1 card addition (DRAFT ONLY — push gated; needs HF write token, project token in Secrets.txt is read-scoped):**
+> **Final release of the v1.3.x research line (2026-05-28).** v1.3.1 is the resting production model. The successor experiment (v1.3.2, Phase 4.4.0) targeted action-claim fabrication and was rolled back — ungrounded action-claims moved 6.4%→8.6% against a <4% target. Headline finding: action-claim grounding at 8B Llama-3.1 resisted both deploy-time prompt engineering and targeted LoRA fine-tuning — a clean negative result. v1.3.2 is retained as an audit-only artifact on the Ollama host and was never published here. Next chapter designs *around* the ceiling (Home Assistant Tier 1, external ground truth).
+
+### 4.5.0.D — Known-issues register ✅
+Wrote `KNOWN_ISSUES_AT_REST.md` (workspace root): fw 4.0.4 poisoned-rules boot loop (boot-time revalidation never landed), default-temp authorization regression (4/6→2/6, temp=0 unaffected, accepted at ship), the action-claim fabrication ceiling (pointer to eval), v1.3.x carry-forward levers (double bucket-1, LED color rebalance — rested not lost), and residuals (`:v1.3.2` audit-only, raw proxy dir excluded, read-scoped HF token, pre-existing untracked files). Committed in `6d6e386`.
+
+### 4.5.0.E — HA Tier 1 scaffold ✅
+Created `ha-tier1/README.md`: points to `HA_TIER1_GROUNDWORK.md`, states "scaffold only — no implementation as of the 2026-05-28 curtain call," lists the planned (not-yet-created) entry points (`ha_client.py`, `ha_tools.py`, `demo.py`, `eval/`). No integration code, no HA deps, no firmware touched. Committed in `6d6e386`.
+
+### Production state re-verified at rest (unchanged)
+Three chips on `wireclaw-agent:v1.3.1` + fw `bf80fa9`; azza 6-tag ladder intact (`:v1.3.2` audit-only). Nothing in 4.5.0 touched firmware, chip config, or model weights — all L1–L2 housekeeping.
+
+### GATED PUSHES — awaiting Scott's explicit go (nothing pushed)
+1. **4 unpushed commits** on `main` (branch ahead 4 of origin/main): `4786680` (4.4.0.E/F), `6d6e386` (4.5.0.A/D/E docs+scaffold), `5ee61c0` (4.5.0.B README) — plus `d5f64b6` (4.4.0.D) from before. → `git push origin main` on go.
+2. **Tag `v1.3.2-rollback`** (`5ee61c0`) → `git push origin v1.3.2-rollback` on go.
+3. **README change** — committed locally (`5ee61c0`); goes public with the branch push above. Eyeball the wording first (diff in this handback / `git show 5ee61c0 -- README.md`).
+4. **HF v1.3.1 card addition** — drafted above; needs a write token from Scott OR Scott applies it in the HF web UI (read-scoped project token can't push).
+5. **GitHub repo "About"/description + topics** — suggested text above; Scott applies in the GitHub web UI (Code has no API access for repo settings).
+
+### STOP
+Curtain call complete. Holding here. No new phase, no HA implementation, no firmware/chip/model changes until a future directive opens the HA chapter.
+
+**Tag:** "Phase 4.5.0 curtain call complete — resting state tagged `v1.3.2-rollback` (local), curtain-call docs + known-issues register + ha-tier1 scaffold committed, README/HF/repo-description drafts staged. 5 gated public actions awaiting Scott's go. v1.3.1 production untouched. STOPPED."

@@ -3075,3 +3075,13 @@ E.2 ran to completion: control (v1.3.1) 140/140, flip c6-01 → v1.3.2, treatmen
 **Result: v1.3.2 fails its primary objective.** Ungrounded action-claim rate 8.6% (treatment) vs 6.4% (clean v1.3.1 control) — wrong direction; target <4%. **3/7 ship criteria pass** (criterion 5 technical, 6 deception_04 temp=0 PASS, 7 manual probe 4/5). Fails 1 (ungrounded), 2 (Bucket A 11.7%), 3 (Bucket C win not preserved, deep-purple persists), 4 (temp=0 21/30). Per directive's `≤4 → rollback` rule, evidence points to rollback. Real wins captured: deception_04 temp=0 + identity_stress 4/4. Confirms+strengthens H.7 two-axis finding (action-claim grounding resistant to both text-layer AND fine-tune at 8B). F handback written to from_code.md with 3 options; **no chip/HF action taken — STOP for Scott's call.**
 
 Day Brev spend $4.97 (~$0.97 over $4 soft ceiling, all D compute). c6-02/c6-03 untouched. azza ladder 6 tags, additive. E artifacts staged, not yet committed (await F-time go; exclude raw proxy-2026-05-28/).
+
+## 2026-05-28 — Phase 4.5.0 curtain call complete (Code)
+- Wrote curtain-call docs/scaffold and committed locally (signed Scott Whitney):
+  - `6d6e386` — PROJECT_STATUS banner, PROJECT_EVALUATION_2026-05-28, RESEARCH_FINDINGS, HA_TIER1_GROUNDWORK, KNOWN_ISSUES_AT_REST, ha-tier1/ scaffold.
+  - `5ee61c0` — README resting-state status note + Model link v1.1→v1.3.1-lora (public push gated).
+- Tagged resting point **`v1.3.2-rollback`** (annotated, at `5ee61c0`) — NOT pushed (gated).
+- Safety check: no model weights tracked in repo (`git ls-files` clean); `output/` weights gitignored. No history rewrite needed.
+- HF read-only verify (all pass): v1.3.1 card accurate; v1.3 superseded banner intact; v1.3.2 NOT on HF (HTTP 401). Drafted v1.3.1 "final release of v1.3.x line" card note (gated — needs write token).
+- 5 gated public actions handed to Scott (branch push ×4 commits, tag push, README, HF card, GitHub repo description). Production (3 chips v1.3.1 + fw bf80fa9, azza 6-tag ladder) untouched.
+- STOP: curtain call done; no new work until a future directive opens HA Tier 1.
