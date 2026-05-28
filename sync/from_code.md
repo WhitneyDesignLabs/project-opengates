@@ -1897,3 +1897,15 @@ Three chips on `wireclaw-agent:v1.3.1` + fw `bf80fa9`; azza 6-tag ladder intact 
 Curtain call complete. Holding here. No new phase, no HA implementation, no firmware/chip/model changes until a future directive opens the HA chapter.
 
 **Tag:** "Phase 4.5.0 curtain call complete — resting state tagged `v1.3.2-rollback` (local), curtain-call docs + known-issues register + ha-tier1 scaffold committed, README/HF/repo-description drafts staged. 5 gated public actions awaiting Scott's go. v1.3.1 production untouched. STOPPED."
+
+---
+
+## Phase 4.5.0 — gated pushes executed on Scott's go ("go on all 5") — 2026-05-28
+
+- **#1 Branch push** ✅ `git push origin main` — `363c2ff..4f689b2`. origin/main now current (5 commits published incl. 4.4.0.E/F + all 4.5.0 work).
+- **#2 Tag push** ✅ `v1.3.2-rollback` → origin (`a4b3810`). Public recoverable anchor live.
+- **#3 README** ✅ live with the branch push (resting-state banner + v1.3.1 model link).
+- **#5 GitHub repo About/topics** ✅ applied via `gh` (WhitneyDesignLabs, `repo` scope). Description set; topics: constitutional-ai, esp32, home-assistant, llama, lora, ollama. Verified.
+- **#4 HF v1.3.1 card** ❌ BLOCKED — could not push. The HuggingFace token in `Secrets.txt` ("wireclaw-lora-training", `hf_KzEF…`) returns **HTTP 401 "Invalid username or password"** — it is invalid/expired, not merely read-scoped as the directive assumed. **Action needed from Scott:** provide a valid HF **write** token (then Code can push the drafted card note), OR apply the drafted "Final release of the v1.3.x research line (2026-05-28)" note (text in the prior handback section) directly in the HF web UI. The v1.3.1 card is accurate as-is; this is an additive note only, so no urgency/risk.
+
+**Net:** 4 of 5 gated public actions complete. Only the HF card note remains, blocked on a valid HF write token. STOP holds.

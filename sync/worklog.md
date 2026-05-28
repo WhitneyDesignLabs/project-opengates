@@ -3085,3 +3085,9 @@ Day Brev spend $4.97 (~$0.97 over $4 soft ceiling, all D compute). c6-02/c6-03 u
 - HF read-only verify (all pass): v1.3.1 card accurate; v1.3 superseded banner intact; v1.3.2 NOT on HF (HTTP 401). Drafted v1.3.1 "final release of v1.3.x line" card note (gated — needs write token).
 - 5 gated public actions handed to Scott (branch push ×4 commits, tag push, README, HF card, GitHub repo description). Production (3 chips v1.3.1 + fw bf80fa9, azza 6-tag ladder) untouched.
 - STOP: curtain call done; no new work until a future directive opens HA Tier 1.
+
+## 2026-05-28 — Phase 4.5.0 gated pushes executed (Code, on Scott's go)
+- Pushed main (363c2ff..4f689b2) + tag v1.3.2-rollback to origin; README now public.
+- Set GitHub repo description + 6 topics via gh (WhitneyDesignLabs/project-opengates).
+- HF card note NOT pushed: Secrets.txt HF token returns 401 (invalid/expired). Needs valid write token from Scott or manual HF-UI edit. Drafted note preserved in from_code.md.
+- 4/5 gated actions done; HF card the only remainder. STOP.
