@@ -2,7 +2,25 @@
 
 **Constitution (canonical):** https://clawhub.ai/souls/opengates-constitution
  · **Firmware:** [WhitneyDesignLabs/WireClaw](https://github.com/WhitneyDesignLabs/WireClaw)
- · **Model:** [WhitneyDesignLabs/wireclaw-agent-v1.1-lora](https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.1-lora)
+ · **Model:** [WhitneyDesignLabs/wireclaw-agent-v1.3.1-lora](https://huggingface.co/WhitneyDesignLabs/wireclaw-agent-v1.3.1-lora)
+
+---
+
+## ⏸️ Project status (2026-05-28) — research line rested at v1.3.1
+
+The v1.3.x constitutional-LoRA research line is **rested**, not abandoned. The production model is
+`wireclaw-agent:v1.3.1` (three chips + firmware `bf80fa9`). v1.3.2 was rolled back at its ship gate
+(repo tag [`v1.3.2-rollback`](https://github.com/WhitneyDesignLabs/project-opengates/releases/tag/v1.3.2-rollback)).
+
+The headline finding: **action-claim grounding at 8B Llama-3.1 is resistant to both deploy-time
+prompt engineering and targeted LoRA fine-tuning** — a clean publishable negative result.
+
+- **[`RESEARCH_FINDINGS.md`](RESEARCH_FINDINGS.md)** — the public writeup of the negative result.
+- **[`PROJECT_EVALUATION_2026-05-28.md`](PROJECT_EVALUATION_2026-05-28.md)** — what worked, the
+  ceiling, and the chosen path forward.
+
+**Next chapter:** Home Assistant Tier 1 — a zero-firmware integration where HA supplies external
+ground truth, so the fabrication ceiling stops mattering. Design: [`HA_TIER1_GROUNDWORK.md`](HA_TIER1_GROUNDWORK.md).
 
 ---
 
