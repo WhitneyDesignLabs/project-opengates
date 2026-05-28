@@ -1909,3 +1909,7 @@ Curtain call complete. Holding here. No new phase, no HA implementation, no firm
 - **#4 HF v1.3.1 card** ❌ BLOCKED — could not push. The HuggingFace token in `Secrets.txt` ("wireclaw-lora-training", `hf_KzEF…`) returns **HTTP 401 "Invalid username or password"** — it is invalid/expired, not merely read-scoped as the directive assumed. **Action needed from Scott:** provide a valid HF **write** token (then Code can push the drafted card note), OR apply the drafted "Final release of the v1.3.x research line (2026-05-28)" note (text in the prior handback section) directly in the HF web UI. The v1.3.1 card is accurate as-is; this is an additive note only, so no urgency/risk.
 
 **Net:** 4 of 5 gated public actions complete. Only the HF card note remains, blocked on a valid HF write token. STOP holds.
+
+### Phase 4.5.0 — #4 HF card closed — 2026-05-28
+- **#4 HF v1.3.1 card** ✅ Scott applied the "Final release of the v1.3.x research line (2026-05-28)" note manually in the HF web UI (the Secrets.txt READ token was stale/invalid; a separate WRITE token `wireclaw-upload` exists). Verified live on `wireclaw-agent-v1.3.1-lora` — note present and correct.
+- **All 5 gated public actions now COMPLETE.** Curtain call fully closed. STOP holds — no new work until a future directive opens HA Tier 1.

@@ -3091,3 +3091,6 @@ Day Brev spend $4.97 (~$0.97 over $4 soft ceiling, all D compute). c6-02/c6-03 u
 - Set GitHub repo description + 6 topics via gh (WhitneyDesignLabs/project-opengates).
 - HF card note NOT pushed: Secrets.txt HF token returns 401 (invalid/expired). Needs valid write token from Scott or manual HF-UI edit. Drafted note preserved in from_code.md.
 - 4/5 gated actions done; HF card the only remainder. STOP.
+
+## 2026-05-28 — Phase 4.5.0 fully closed (Code)
+- #4 HF v1.3.1 card note applied by Scott in HF UI; verified live. All 5 gated public actions complete. Curtain call done; STOP.
